@@ -1,4 +1,3 @@
-extern crate serde;
 extern crate time;
 
 use std::collections::HashMap;
