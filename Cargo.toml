@@ -4,4 +4,8 @@ version = "0.1.0"
 authors = ["Euan Kemp <euank@euank.com>"]
 
 [dependencies]
-clap = "~2.26.1"
+clap = "*"
+rmp-serde = "*"
+serde = "*"
+serde_derive = "*"
+time = "*"
