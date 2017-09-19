@@ -6,10 +6,18 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate xdg;
+
 mod frecency;
 
-use serde::Serialize;
+use std::path::Path;
+use std::{fs, process};
+
 use clap::{App, Arg, ArgGroup};
+use frecency::Frecency;
+use serde::Serialize;
+
+
+const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
 fn main() {
     let flags = App::new("pazi")
@@ -68,9 +76,9 @@ alias z='pazi_cd'
         xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
 
     let frecency_path = xdg_dirs
-        .place_config_file("pazi_dirs.msgpack")
-        .expect("could not create xdg 'pazi_dirs.msgpack' path");
-    let frecency_file = std::fs::OpenOptions::new()
+        .place_config_file(PAZI_DB_NAME)
+        .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
+    let frecency_file = fs::OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
@@ -79,7 +87,7 @@ alias z='pazi_cd'
     let metadata = frecency_file.metadata().unwrap();
 
     // remember 500 entries total
-    let mut frecency = frecency::Frecency::<String>::new(500);
+    let mut frecency = Frecency::<String>::new(500);
 
     if metadata.len() > 0 {
         // existing file, unmarshal that sucker
@@ -96,24 +104,38 @@ alias z='pazi_cd'
         }
 
         let frecency_update_path = xdg_dirs
-            .place_config_file(format!(".pazi_dirs.msgpack.{}", my_pid))
-            .expect("could not create xdg 'pazi_dirs.msgpack' path");
-        let frecency_update_file = std::fs::File::create(frecency_update_path.clone()).unwrap();
+            .place_config_file(format!(".{}.{}", PAZI_DB_NAME, my_pid))
+            .expect(&format!(
+                "could not create xdg '.{}.{}' path",
+                PAZI_DB_NAME,
+                my_pid
+            ));
 
-        frecency
-            .serialize(&mut rmp_serde::Serializer::new(frecency_update_file))
-            .unwrap();
-        std::fs::rename(frecency_update_path, frecency_path).expect("could not update msgpack db");
-        std::process::exit(0);
+        write_frecency(&frecency, &frecency_path, &frecency_update_path)
+            .expect("could not update frecency path");
+        process::exit(0);
     };
 
     if let Some(to) = flags.value_of("dir") {
         for dir in frecency.items() {
             if dir.contains(to) {
                 print!("{}", dir);
-                std::process::exit(0);
+                process::exit(0);
             }
         }
-        std::process::exit(1);
+        process::exit(1);
     };
+}
+
+fn write_frecency(
+    frecency: &Frecency<String>,
+    target: &Path,
+    tmp_path: &Path,
+) -> std::io::Result<()> {
+    let tmpfile = fs::File::create(tmp_path)?;
+    frecency
+        .serialize(&mut rmp_serde::Serializer::new(tmpfile))
+        .unwrap();
+
+    fs::rename(tmp_path, target)
 }

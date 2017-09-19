@@ -1,10 +1,10 @@
 extern crate time;
 
+use std::cmp;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::collections::hash_map::Entry;
 use std::f64;
-use std::cmp;
+use std::hash::Hash;
 
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);
 
