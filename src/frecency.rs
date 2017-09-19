@@ -50,7 +50,25 @@ impl<T> Frecency<T> where T: Hash, T: Eq, T: Ord, T: Clone {
 
     fn trim_min(&mut self) {
         let min_key = {
-            self.items().last().map(|e| e.clone())
+            let mut min_entry = None;
+            for e in &self.frecency {
+                min_entry = match min_entry {
+                    None => {
+                        Some(e)
+                    },
+                    Some(old_min) => {
+                        if old_min.1 > e.1 {
+                            Some(e)
+                        } else {
+                            Some(old_min)
+                        }
+                    }
+                };
+            };
+            match min_entry{
+                None => None,
+                Some(e) => Some(e.0.clone()),
+            }
         };
 
         if let Some(min) = min_key {
