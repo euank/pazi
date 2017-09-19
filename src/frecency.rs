@@ -9,7 +9,10 @@ use std::cmp;
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct Frecency<T> where T: Hash, T: Eq, T: Ord, T: Clone {
+pub struct Frecency<T>
+where
+    T: Hash + Eq + Ord + Clone,
+{
     // ordering is enforced on access, not on store. This is because updating an entry (visiting)
     // is a much more frequent operation than searching through items for this program.
     frecency: HashMap<T, f64>,
@@ -17,9 +20,12 @@ pub struct Frecency<T> where T: Hash, T: Eq, T: Ord, T: Clone {
 }
 
 
-impl<T> Frecency<T> where T: Hash, T: Eq, T: Ord, T: Clone {
+impl<T> Frecency<T>
+where
+    T: Hash + Eq + Ord + Clone,
+{
     pub fn new(max_size: usize) -> Self {
-        Frecency{
+        Frecency {
             frecency: HashMap::new(),
             max_size: max_size,
         }
@@ -37,10 +43,10 @@ impl<T> Frecency<T> where T: Hash, T: Eq, T: Ord, T: Clone {
             Entry::Occupied(mut e) => {
                 let frecency = e.get_mut();
                 *frecency = ((*frecency - now_decay).exp() + 1f64).ln() + now_decay;
-            },
+            }
             Entry::Vacant(e) => {
                 e.insert(now_decay);
-            },
+            }
         };
         while self.frecency.len() > self.max_size {
             self.trim_min();
@@ -52,19 +58,15 @@ impl<T> Frecency<T> where T: Hash, T: Eq, T: Ord, T: Clone {
             let mut min_entry = None;
             for e in &self.frecency {
                 min_entry = match min_entry {
-                    None => {
+                    None => Some(e),
+                    Some(old_min) => if old_min.1 > e.1 {
                         Some(e)
+                    } else {
+                        Some(old_min)
                     },
-                    Some(old_min) => {
-                        if old_min.1 > e.1 {
-                            Some(e)
-                        } else {
-                            Some(old_min)
-                        }
-                    }
                 };
-            };
-            match min_entry{
+            }
+            match min_entry {
                 None => None,
                 Some(e) => Some(e.0.clone()),
             }
@@ -123,4 +125,3 @@ mod test {
         assert_eq!(f.items().clone(), vec![&"bar", &"baz"]);
     }
 }
-
