@@ -53,12 +53,12 @@ fn main() {
         println!(
             "{}",
             r#"
-pazi_add_dir() {
+__pazi_add_dir() {
     pazi --add-dir "${PWD}"
 }
 
 autoload -Uz add-zsh-hook
-add-zsh-hook chpwd pazi_add_dir
+add-zsh-hook chpwd __pazi_add_dir
 
 pazi_cd() {
     local to=$(pazi --dir "$@")
