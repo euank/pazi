@@ -78,6 +78,10 @@ where
     }
 
     pub fn items(&self) -> Vec<&T> {
+        self.items_with_frecency().iter().map(|&(k, _)| k).collect()
+    }
+
+    pub fn items_with_frecency(&self) -> Vec<(&T, &f64)> {
         let mut v = self.frecency.iter().collect::<Vec<_>>();
         v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
             // Note: f64 doesn't implement ord, so we do a poor-man's ord here.
@@ -90,7 +94,7 @@ where
                 cmp::Ordering::Equal
             }
         });
-        v.iter().map(|&(k, _)| k).collect()
+        v
     }
 }
 

@@ -125,6 +125,11 @@ alias z='pazi_cd'
         }
         process::exit(1);
     };
+
+    // By default print the frecency
+    for el in frecency.items_with_frecency() {
+        println!("{}\t{}", el.1, el.0);
+    }
 }
 
 fn write_frecency(
