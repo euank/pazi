@@ -1,10 +1,9 @@
-extern crate time;
-
 use std::cmp;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::f64;
 use std::hash::Hash;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);
 
@@ -32,13 +31,15 @@ where
     }
 
     pub fn visit(&mut self, key: T) {
-        self.visit_with_time(key, time::now())
+        self.visit_with_time(key, SystemTime::now())
     }
 
     // based off https://wiki.mozilla.org/User:Jesse/NewFrecency#Proposed_new_definition
-    fn visit_with_time(&mut self, key: T, now: time::Tm) {
-        let now_secs = now.tm_sec as f64;
-        let now_decay = now_secs * DECAY_RATE;
+    fn visit_with_time(&mut self, key: T, now: SystemTime) {
+        // The only error here is if the system clock is before the unix epoch. I'm fine panicing
+        // there.
+        let now_secs = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now_decay = now_secs as f64 * DECAY_RATE;
         match self.frecency.entry(key) {
             Entry::Occupied(mut e) => {
                 let frecency = e.get_mut();
@@ -101,10 +102,11 @@ where
 #[cfg(test)]
 mod test {
     use super::Frecency;
-    use super::time;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::time;
 
-    fn timef(u: i64) -> time::Tm {
-        time::at_utc(time::Timespec::new(u, 0))
+    fn timef(u: u64) -> SystemTime {
+        UNIX_EPOCH + time::Duration::from_secs(u)
     }
 
     #[test]
@@ -127,5 +129,18 @@ mod test {
         assert_eq!(f.items().clone(), vec![&"bar", &"foo"]);
         f.visit_with_time("baz", timef(30));
         assert_eq!(f.items().clone(), vec![&"bar", &"baz"]);
+    }
+
+    #[test]
+    fn frecency_decay_works() {
+        let mut f = Frecency::<&str>::new(5);
+        // 1)
+        // We picked a halflife of 30 days (matches mozilla)
+        // That means two visits over 30 days ago should have decayed to less than one visit now
+        let now = SystemTime::now();
+        f.visit_with_time("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60));
+        f.visit_with_time("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60));
+        f.visit_with_time("bar", now);
+        assert_eq!(f.items().clone(), vec![&"bar", &"foo"]);
     }
 }
