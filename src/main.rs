@@ -8,13 +8,12 @@ extern crate serde_derive;
 extern crate xdg;
 
 mod frecency;
+mod frecent_paths;
 
-use std::path::Path;
-use std::{fs, process};
+use std::process;
 
 use clap::{App, Arg, ArgGroup};
-use frecency::Frecency;
-use serde::Serialize;
+use frecent_paths::PathFrecency;
 
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
@@ -53,14 +52,15 @@ fn main() {
         println!(
             "{}",
             r#"
-pazi_add_dir() {
+__pazi_add_dir() {
     pazi --add-dir "${PWD}"
 }
 
 autoload -Uz add-zsh-hook
-add-zsh-hook chpwd pazi_add_dir
+add-zsh-hook chpwd __pazi_add_dir
 
 pazi_cd() {
+    [ "$#" -eq 0 ] && pazi && return 0
     local to=$(pazi --dir "$@")
     [ -z "${to}" ] && return 1
     cd "${to}"
@@ -78,42 +78,21 @@ alias z='pazi_cd'
     let frecency_path = xdg_dirs
         .place_config_file(PAZI_DB_NAME)
         .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
-    let frecency_file = fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .open(frecency_path.clone())
-        .unwrap();
-    let metadata = frecency_file.metadata().unwrap();
 
-    // remember 500 entries total
-    let mut frecency = Frecency::<String>::new(500);
-
-    if metadata.len() > 0 {
-        // existing file, unmarshal that sucker
-        let mut de = rmp_serde::Deserializer::from_read(frecency_file);
-        frecency = serde::Deserialize::deserialize(&mut de).unwrap();
-    }
+    let mut frecency = PathFrecency::load(&frecency_path);
 
     if let Some(dir) = flags.value_of("add-dir") {
         frecency.visit(dir.to_string());
 
-        let my_pid = unsafe { libc::getpid() };
-        if my_pid == 0 {
-            panic!("getpid returned 0");
+        match frecency.save_to_disk() {
+            Ok(_) => {
+                process::exit(0);
+            }
+            Err(e) => {
+                println!("pazi: error adding directory: {}", e);
+                process::exit(1);
+            }
         }
-
-        let frecency_update_path = xdg_dirs
-            .place_config_file(format!(".{}.{}", PAZI_DB_NAME, my_pid))
-            .expect(&format!(
-                "could not create xdg '.{}.{}' path",
-                PAZI_DB_NAME,
-                my_pid
-            ));
-
-        write_frecency(&frecency, &frecency_path, &frecency_update_path)
-            .expect("could not update frecency path");
-        process::exit(0);
     };
 
     if let Some(to) = flags.value_of("dir") {
@@ -125,17 +104,9 @@ alias z='pazi_cd'
         }
         process::exit(1);
     };
-}
 
-fn write_frecency(
-    frecency: &Frecency<String>,
-    target: &Path,
-    tmp_path: &Path,
-) -> std::io::Result<()> {
-    let tmpfile = fs::File::create(tmp_path)?;
-    frecency
-        .serialize(&mut rmp_serde::Serializer::new(tmpfile))
-        .unwrap();
-
-    fs::rename(tmp_path, target)
+    // By default print the frecency
+    for el in frecency.items_with_frecency() {
+        println!("{}\t{}", el.1, el.0);
+    }
 }
