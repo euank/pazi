@@ -96,17 +96,17 @@ alias z='pazi_cd'
     };
 
     if let Some(to) = flags.value_of("dir") {
-        for dir in frecency.items() {
-            if dir.contains(to) {
+        match frecency.best_directory_match(to) {
+            Some(dir) => {
                 print!("{}", dir);
                 process::exit(0);
             }
+            None => process::exit(1)
         }
-        process::exit(1);
     };
 
     // By default print the frecency
-    for el in frecency.items_with_frecency() {
-        println!("{}\t{}", el.1, el.0);
+    for el in frecency.items_with_normalized_frecency() {
+        println!("{:.4}\t{}", el.1 * 100f64, el.0);
     }
 }

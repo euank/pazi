@@ -70,11 +70,31 @@ impl PathFrecency {
         })
     }
 
-    pub fn items(&self) -> Vec<&String> {
-        self.frecency.items()
+    pub fn items_with_normalized_frecency(&self) -> Vec<(&String, f64)> {
+        let items = self.items_with_frecency();
+        if items.len() == 0 {
+            return items;
+        }
+        let min = items[items.len()-1].1;
+        let max = items[0].1;
+
+        items.into_iter().map(|(s, v)| {
+            let normalized = (v - min) / max;
+            (s, normalized)
+        }).collect()
     }
 
-    pub fn items_with_frecency(&self) -> Vec<(&String, &f64)> {
+    pub fn items_with_frecency(&self) -> Vec<(&String, f64)> {
         self.frecency.items_with_frecency()
+            .iter().map(|&(s, v)| (s, *v)).collect()
+    }
+
+    pub fn best_directory_match(&self, filter: &str) -> Option<&String> {
+        for (dir, _) in self.items_with_normalized_frecency() {
+            if dir.contains(filter) {
+                return Some(dir);
+            }
+        }
+        None
     }
 }
