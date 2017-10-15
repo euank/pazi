@@ -7,6 +7,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate xdg;
 
+mod matcher;
 mod frecency;
 mod frecent_paths;
 
@@ -43,9 +44,9 @@ fn main() {
                 .takes_value(true)
                 .value_name("directory"),
         )
-        .group(
-            ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]),
-        )
+        .group(ArgGroup::with_name("operation").args(
+            &["init", "dir", "add-dir"],
+        ))
         .get_matches();
 
     if flags.is_present("init") {
@@ -75,9 +76,10 @@ alias z='pazi_cd'
     let xdg_dirs =
         xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
 
-    let frecency_path = xdg_dirs
-        .place_config_file(PAZI_DB_NAME)
-        .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
+    let frecency_path = xdg_dirs.place_config_file(PAZI_DB_NAME).expect(&format!(
+        "could not create xdg '{}' path",
+        PAZI_DB_NAME
+    ));
 
     let mut frecency = PathFrecency::load(&frecency_path);
 
@@ -101,7 +103,7 @@ alias z='pazi_cd'
                 print!("{}", dir);
                 process::exit(0);
             }
-            None => process::exit(1)
+            None => process::exit(1),
         }
     };
 
