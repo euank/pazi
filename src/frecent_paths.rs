@@ -93,7 +93,7 @@ impl PathFrecency {
         self.frecency
             .items_with_frecency()
             .iter()
-            .map(|&(s, v)| (s, *v))
+            .map(|&(s, v)| (s, v))
             .collect()
     }
 
