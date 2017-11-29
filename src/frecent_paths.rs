@@ -304,4 +304,15 @@ mod tests {
         assert_eq!(pc.matches("/foo", "foo"), pc.matches("/asdf/foo", "foo"));
         assert_eq!(pc.matches("/foo/bar", "ar"), None);
     }
+
+    #[test]
+    fn test_substring_matcher() {
+        let sm = SubstringMatcher {};
+
+        assert_match_in_order(vec![
+            sm.matches("foo", "f"),
+            sm.matches("foo", "fo"),
+            sm.matches("foo", "foo"),
+        ]);
+    }
 }

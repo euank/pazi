@@ -99,6 +99,22 @@ where
         });
         v
     }
+
+    pub fn normalized_frecency(&self) -> Vec<(&T, f64)> {
+        let items = self.items_with_frecency();
+        if items.len() == 0 {
+            return items;
+        }
+        let min = items[items.len() - 1].1;
+        let max = items[0].1;
+        items
+            .into_iter()
+            .map(|(s, v)| {
+                let normalized = (v - min) / max;
+                (s, normalized)
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
