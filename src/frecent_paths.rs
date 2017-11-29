@@ -135,7 +135,7 @@ impl PathFrecency {
             .iter().flat_map(|item| {
                 matchers.iter().filter_map(move |m| {
                     match m.matches(item.0, filter) {
-                        Some(v) => Some((item.0, v * item.1)),
+                        Some(v) => Some((item.0, v * 0.6 +  item.1 * 0.4)),
                         None => None,
                     }
                 })
@@ -146,7 +146,7 @@ impl PathFrecency {
 
 
         best.and_then(|el| {
-            if el.1 > 0.5 {
+            if el.1 > (0.5 * 0.5) {
                 Some(el.0)
             } else {
                 debug!("discarding {} with score {}", el.0, el.1);
