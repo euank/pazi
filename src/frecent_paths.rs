@@ -73,7 +73,7 @@ impl PathFrecency {
     }
 
     pub fn items_with_normalized_frecency(&self) -> Vec<(&String, f64)> {
-        let items = self.items_with_frecency();
+        let items = self.frecency.normalized_frecency();
         if items.len() == 0 {
             return items;
         }
@@ -86,14 +86,6 @@ impl PathFrecency {
                 let normalized = (v - min) / max;
                 (s, normalized)
             })
-            .collect()
-    }
-
-    pub fn items_with_frecency(&self) -> Vec<(&String, f64)> {
-        self.frecency
-            .items_with_frecency()
-            .iter()
-            .map(|&(s, v)| (s, v))
             .collect()
     }
 
@@ -139,12 +131,12 @@ impl PathFrecency {
             &pc_ci_sm,
         ];
 
-        for item in self.items_with_frecency() {
+        for item in self.items_with_normalized_frecency() {
             for mi in 0..matchers.len() {
                 let matcher = matchers[mi];
                 match matcher.matches(item.0, filter) {
                     Some(val) => {
-                        if val > 0.6 {
+                        if val > 0.5 {
                             return Some(item.0);
                         }
                     }
