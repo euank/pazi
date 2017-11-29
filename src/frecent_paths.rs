@@ -131,20 +131,28 @@ impl PathFrecency {
             &pc_ci_sm,
         ];
 
-        for item in self.items_with_normalized_frecency() {
-            for mi in 0..matchers.len() {
-                let matcher = matchers[mi];
-                match matcher.matches(item.0, filter) {
-                    Some(val) => {
-                        if val > 0.5 {
-                            return Some(item.0);
-                        }
+        let best = self.items_with_normalized_frecency()
+            .iter().flat_map(|item| {
+                matchers.iter().filter_map(move |m| {
+                    match m.matches(item.0, filter) {
+                        Some(v) => Some((item.0, v * item.1)),
+                        None => None,
                     }
-                    None => {}
-                }
+                })
+            }).max_by(|lhs, rhs| {
+                // unwrap for NaN which shouldn't happen
+                lhs.1.partial_cmp(&rhs.1).unwrap()
+            });
+
+
+        best.and_then(|el| {
+            if el.1 > 0.5 {
+                Some(el.0)
+            } else {
+                debug!("discarding {} with score {}", el.0, el.1);
+                None
             }
-        }
-        None
+        })
     }
 }
 

@@ -6,6 +6,9 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate xdg;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 mod matcher;
 mod frecency;
@@ -24,6 +27,12 @@ fn main() {
         .about("An autojump tool for zsh")
         .version(crate_version!())
         .author(crate_authors!())
+        .arg(
+            Arg::with_name("debug")
+                .help("print debug information to stderr")
+                .long("debug")
+                .env("PAZI_DEBUG"),
+        )
         .arg(
             Arg::with_name("init")
                 .help("provide initialization hooks to eval in your shell")
@@ -71,6 +80,12 @@ alias z='pazi_cd'
         );
         std::process::exit(0);
     };
+
+    if flags.is_present("debug") {
+        env_logger::LogBuilder::new()
+            .filter(None, log::LogLevelFilter::Debug)
+            .init().unwrap();
+    }
 
 
     let xdg_dirs =
