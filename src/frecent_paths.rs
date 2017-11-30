@@ -233,7 +233,8 @@ impl<'a> Matcher for PathComponentMatcher<'a> {
 
 
 struct TransformedMatcher<'a> {
-    transformation: fn(input: &str) -> String,
+    input_transformation: fn(input: &str) -> String,
+    search_transformation: fn(input: &str) -> String,
     matcher: &'a Matcher,
     attenuation: f64,
 }
@@ -243,7 +244,8 @@ fn case_insensitive_matcher(base: &Matcher) -> TransformedMatcher {
         input.to_owned().to_lowercase()
     }
     TransformedMatcher {
-        transformation: transformer,
+        input_transformation: transformer,
+        search_transformation: transformer,
         matcher: base,
         attenuation: 0.7,
     }
@@ -252,7 +254,7 @@ fn case_insensitive_matcher(base: &Matcher) -> TransformedMatcher {
 
 impl<'a> Matcher for TransformedMatcher<'a> {
     fn matches(&self, input: &str, search: &str) -> Option<f64> {
-        match self.matcher.matches(&(self.transformation)(input), search) {
+        match self.matcher.matches(&(self.input_transformation)(input), &(self.search_transformation)(search)) {
             Some(f) => Some(f * self.attenuation),
             None => None,
         }
@@ -290,6 +292,8 @@ mod tests {
         assert_eq!(ci.matches("foo", "foo"), Some(0.7));
         assert_eq!(ci.matches("i pity", "the fool"), None);
         assert_eq!(ci.matches("FOO", "foo"), Some(0.7));
+        assert_eq!(ci.matches("foo", "FOO"), Some(0.7));
+        assert_eq!(ci.matches("aSdF", "AsDf"), Some(0.7));
     }
 
     #[test]
