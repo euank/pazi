@@ -1,14 +1,14 @@
 #[macro_use]
 extern crate clap;
+extern crate env_logger;
 extern crate libc;
+#[macro_use]
+extern crate log;
 extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate xdg;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
 
 mod matcher;
 mod frecency;
@@ -53,9 +53,7 @@ fn main() {
                 .takes_value(true)
                 .value_name("directory"),
         )
-        .group(ArgGroup::with_name("operation").args(
-            &["init", "dir", "add-dir"],
-        ))
+        .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
         .get_matches();
 
     if flags.is_present("init") {
@@ -84,17 +82,17 @@ alias z='pazi_cd'
     if flags.is_present("debug") {
         env_logger::LogBuilder::new()
             .filter(None, log::LogLevelFilter::Debug)
-            .init().unwrap();
+            .init()
+            .unwrap();
     }
 
 
     let xdg_dirs =
         xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
 
-    let frecency_path = xdg_dirs.place_config_file(PAZI_DB_NAME).expect(&format!(
-        "could not create xdg '{}' path",
-        PAZI_DB_NAME
-    ));
+    let frecency_path = xdg_dirs
+        .place_config_file(PAZI_DB_NAME)
+        .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
 
     let mut frecency = PathFrecency::load(&frecency_path);
 

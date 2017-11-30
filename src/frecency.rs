@@ -60,13 +60,11 @@ where
             for e in &self.frecency {
                 min_entry = match min_entry {
                     None => Some(e),
-                    Some(old_min) => {
-                        if old_min.1 > e.1 {
-                            Some(e)
-                        } else {
-                            Some(old_min)
-                        }
-                    }
+                    Some(old_min) => if old_min.1 > e.1 {
+                        Some(e)
+                    } else {
+                        Some(old_min)
+                    },
                 };
             }
             match min_entry {
@@ -85,7 +83,10 @@ where
     }
 
     pub fn items_with_frecency(&self) -> Vec<(&T, f64)> {
-        let mut v = self.frecency.iter().map(|(ref t, f)| (*t, f.clone())).collect::<Vec<_>>();
+        let mut v = self.frecency
+            .iter()
+            .map(|(ref t, f)| (*t, f.clone()))
+            .collect::<Vec<_>>();
         v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
             // Note: f64 doesn't implement ord, so we do a poor-man's ord here.
             // This is wrong for NaN, but fortunately we don't have those here.

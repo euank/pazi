@@ -8,6 +8,7 @@ use serde::Serialize;
 use serde;
 use libc;
 use rmp_serde;
+use matcher::*;
 
 pub struct PathFrecency {
     frecency: Frecency<String>,
@@ -51,18 +52,18 @@ impl PathFrecency {
             return Err("could not get pid".to_string());
         }
 
-        let fname = self.path.file_name().ok_or(
-            "path did not have file component"
-                .to_string(),
-        )?;
+        let fname = self.path
+            .file_name()
+            .ok_or("path did not have file component".to_string())?;
 
         let tmpfile_name = format!(".{}.{}", fname.to_string_lossy(), my_pid);
-        let tmpfile_dir = self.path.parent().ok_or("unable to get parent".to_string())?;
+        let tmpfile_dir = self.path
+            .parent()
+            .ok_or("unable to get parent".to_string())?;
         let tmpfile_path = tmpfile_dir.join(tmpfile_name);
 
-        let tmpfile = fs::File::create(&tmpfile_path).map_err(|_| {
-            "could not create tempfile".to_string()
-        })?;
+        let tmpfile =
+            fs::File::create(&tmpfile_path).map_err(|_| "could not create tempfile".to_string())?;
 
         self.frecency
             .serialize(&mut rmp_serde::Serializer::new(tmpfile))
@@ -116,15 +117,19 @@ impl PathFrecency {
         //    weighted carefully low; sometimes it is better to force a user to make a new query
         //    than to make too strange of a shot in the dark.
 
-        let ci_em = case_insensitive_matcher(&ExactMatcher {});
-        let pc_ci_em = PathComponentMatcher { base: &ci_em };
-        let ci_sm = case_insensitive_matcher(&SubstringMatcher {});
-        let pc_ci_sm = PathComponentMatcher { base: &ci_sm };
+        let em = ExactMatcher {};
+        let sm = SubstringMatcher {};
+        let ci_em = CaseInsensitiveMatcher::new(&em);
+        let pc_em = PathComponentMatcher::new(&em);
+        let pc_sm = PathComponentMatcher::new(&sm);
+        let pc_ci_em = PathComponentMatcher::new(&ci_em);
+        let ci_sm = CaseInsensitiveMatcher::new(&sm);
+        let pc_ci_sm = PathComponentMatcher::new(&ci_sm);
         let matchers: Vec<&Matcher> = vec![
             &ExactMatcher {},
             &ci_em,
-            &PathComponentMatcher { base: &ExactMatcher {} },
-            &PathComponentMatcher { base: &SubstringMatcher {} },
+            &pc_em,
+            &pc_sm,
             &pc_ci_em,
             &SubstringMatcher {},
             &ci_sm,
@@ -132,14 +137,16 @@ impl PathFrecency {
         ];
 
         let best = self.items_with_normalized_frecency()
-            .iter().flat_map(|item| {
-                matchers.iter().filter_map(move |m| {
-                    match m.matches(item.0, filter) {
-                        Some(v) => Some((item.0, v * 0.8 +  (item.1 + 1.0) / 2.0 * 0.2)),
+            .iter()
+            .flat_map(|item| {
+                matchers
+                    .iter()
+                    .filter_map(move |m| match m.matches(item.0, filter) {
+                        Some(v) => Some((item.0, v * 0.8 + (item.1 + 1.0) / 2.0 * 0.2)),
                         None => None,
-                    }
-                })
-            }).max_by(|lhs, rhs| {
+                    })
+            })
+            .max_by(|lhs, rhs| {
                 // unwrap for NaN which shouldn't happen
                 lhs.1.partial_cmp(&rhs.1).unwrap()
             });
@@ -153,170 +160,5 @@ impl PathFrecency {
                 None
             }
         })
-    }
-}
-
-trait Matcher {
-    fn matches(&self, input: &str, search: &str) -> Option<f64>;
-}
-
-struct ExactMatcher {}
-impl Matcher for ExactMatcher {
-    fn matches(&self, input: &str, search: &str) -> Option<f64> {
-        if input == search {
-            return Some(1.0);
-        }
-        None
-    }
-}
-
-struct SubstringMatcher {}
-impl Matcher for SubstringMatcher {
-    fn matches(&self, input: &str, search: &str) -> Option<f64> {
-        let res = input.find(search);
-        match res {
-            None => None,
-            Some(offset) => {
-                let base = if offset == 0 {
-                    // If the match is at the very beginning, consider it a better match
-                    1.0
-                } else {
-                    0.8
-                };
-                Some(base * search.len() as f64 / input.len() as f64)
-            }
-        }
-    }
-}
-
-struct PathComponentMatcher<'a> {
-    base: &'a Matcher,
-}
-impl<'a> Matcher for PathComponentMatcher<'a> {
-    fn matches(&self, input: &str, search: &str) -> Option<f64> {
-        let p = Path::new(input);
-        let components = p.components();
-        let num_components = p.components().count();
-        // Reduce the weight of components the further from the right they are
-        // I've arbitrarily chosen to linearly attenuate them
-        let mut weight = 0.9;
-        let weight_step = (weight - 0.2) / num_components as f64;
-        let mut res = None;
-        for component in components.rev() {
-            let s = match component.as_os_str().to_str() {
-                Some(s) => s,
-                None => {
-                    continue;
-                }
-            };
-            match self.base.matches(s, search) {
-                Some(v) => {
-                    let attv = v * weight;
-                    res = match res {
-                        None => Some(attv),
-                        Some(existing) => {
-                            if attv > existing {
-                                Some(attv)
-                            } else {
-                                Some(existing)
-                            }
-                        }
-                    }
-                }
-                None => {}
-            }
-            weight -= weight_step;
-        }
-        res
-    }
-}
-
-
-struct TransformedMatcher<'a> {
-    input_transformation: fn(input: &str) -> String,
-    search_transformation: fn(input: &str) -> String,
-    matcher: &'a Matcher,
-    attenuation: f64,
-}
-
-fn case_insensitive_matcher(base: &Matcher) -> TransformedMatcher {
-    fn transformer(input: &str) -> String {
-        input.to_owned().to_lowercase()
-    }
-    TransformedMatcher {
-        input_transformation: transformer,
-        search_transformation: transformer,
-        matcher: base,
-        attenuation: 0.7,
-    }
-}
-
-
-impl<'a> Matcher for TransformedMatcher<'a> {
-    fn matches(&self, input: &str, search: &str) -> Option<f64> {
-        match self.matcher.matches(&(self.input_transformation)(input), &(self.search_transformation)(search)) {
-            Some(f) => Some(f * self.attenuation),
-            None => None,
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn assert_match_in_order(match_results: Vec<Option<f64>>) {
-        for i in 0..(match_results.len() - 1) {
-            match (match_results[i], match_results[i + 1]) {
-                (Some(lhs), Some(rhs)) => {
-                    assert!(rhs > lhs);
-                }
-                _ => assert!(false),
-            }
-        }
-    }
-
-    #[test]
-    fn test_exact_matcher() {
-        let m = ExactMatcher {};
-        assert_eq!(m.matches("foo", "foo"), Some(1.0));
-        assert_eq!(m.matches("i pity", "the fool"), None);
-        assert_eq!(m.matches("FOO", "foo"), None);
-    }
-
-    #[test]
-    fn test_case_insensitive_matcher() {
-        let em = ExactMatcher {};
-        let ci = case_insensitive_matcher(&em);
-
-        assert_eq!(ci.matches("foo", "foo"), Some(0.7));
-        assert_eq!(ci.matches("i pity", "the fool"), None);
-        assert_eq!(ci.matches("FOO", "foo"), Some(0.7));
-        assert_eq!(ci.matches("foo", "FOO"), Some(0.7));
-        assert_eq!(ci.matches("aSdF", "AsDf"), Some(0.7));
-    }
-
-    #[test]
-    fn test_path_component_matcher() {
-        let em = ExactMatcher {};
-        let pc = PathComponentMatcher { base: &em };
-
-        assert_match_in_order(vec![
-            pc.matches("/foo/bar", "foo"),
-            pc.matches("/foo", "foo"),
-        ]);
-        assert_eq!(pc.matches("/foo", "foo"), pc.matches("/asdf/foo", "foo"));
-        assert_eq!(pc.matches("/foo/bar", "ar"), None);
-    }
-
-    #[test]
-    fn test_substring_matcher() {
-        let sm = SubstringMatcher {};
-
-        assert_match_in_order(vec![
-            sm.matches("foo", "f"),
-            sm.matches("foo", "fo"),
-            sm.matches("foo", "foo"),
-        ]);
     }
 }
