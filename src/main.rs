@@ -69,6 +69,7 @@ add-zsh-hook chpwd __pazi_add_dir
 
 pazi_cd() {
     [ "$#" -eq 0 ] && pazi && return 0
+    [[ "$@[(r)--help]" == "--help" ]] && pazi --help && return 0
     local to=$(pazi --dir "$@")
     [ -z "${to}" ] && return 1
     cd "${to}"
