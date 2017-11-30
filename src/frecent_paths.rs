@@ -8,6 +8,7 @@ use serde::Serialize;
 use serde;
 use libc;
 use rmp_serde;
+use matcher::*;
 
 pub struct PathFrecency {
     frecency: Frecency<String>,
@@ -56,7 +57,9 @@ impl PathFrecency {
             .ok_or("path did not have file component".to_string())?;
 
         let tmpfile_name = format!(".{}.{}", fname.to_string_lossy(), my_pid);
-        let tmpfile_dir = self.path.parent().ok_or("unable to get parent".to_string())?;
+        let tmpfile_dir = self.path
+            .parent()
+            .ok_or("unable to get parent".to_string())?;
         let tmpfile_path = tmpfile_dir.join(tmpfile_name);
 
         let tmpfile =
@@ -71,30 +74,91 @@ impl PathFrecency {
     }
 
     pub fn items_with_normalized_frecency(&self) -> Vec<(&String, f64)> {
-        let items = self.items_with_frecency();
+        let items = self.frecency.normalized_frecency();
         if items.len() == 0 {
             return items;
         }
-        let min = items[items.len()-1].1;
+        let min = items[items.len() - 1].1;
         let max = items[0].1;
 
-        items.into_iter().map(|(s, v)| {
-            let normalized = (v - min) / max;
-            (s, normalized)
-        }).collect()
-    }
-
-    pub fn items_with_frecency(&self) -> Vec<(&String, f64)> {
-        self.frecency.items_with_frecency()
-            .iter().map(|&(s, v)| (s, *v)).collect()
+        items
+            .into_iter()
+            .map(|(s, v)| {
+                let normalized = (v - min) / max;
+                (s, normalized)
+            })
+            .collect()
     }
 
     pub fn best_directory_match(&self, filter: &str) -> Option<&String> {
-        for (dir, _) in self.items_with_normalized_frecency() {
-            if dir.contains(filter) {
-                return Some(dir);
+        // 'best directory' is a tricky concept, as is 'match.
+        //
+        // There's a continuum from "exact string match" to "no characters in common", and we
+        // have to try and approximate what a human expects to figure out the weight and cutoff
+        // within that continuum.
+        //
+        // The following assumptions are what I started with:
+        // 1) Exact matches should always be jumped to with no questions asked. Exact matches are
+        //    rare. Substring matches are permissible and expected.
+        // 2) Components should be deconstructed from frecency database items for matching; people
+        //    think in components. For example, an entry of "/home/user/dev" will be thought about
+        //    by a user as the three distinct components "home", "user", and "dev", so we can
+        //    better match their expectations by matching individual components.
+        // 3) Component matches should be weighted based on how "deep" / "far right" the matched
+        //    component is. That is to say, the query "foo" should be weighted more highly for
+        //    "/home/user/project/foo" than for "/home/user/foo/stuff", even if the latter is
+        //    higher in the frecency index.
+        // 4) Case and punctuation in the target are liable to not be present in the query.
+        // 5) If the query contains a component separator, the user likely wants each side of it to
+        //    be fuzzy. That is to say: "z dev/tool" likely wishes to do a fuzzy match on the
+        //    strings "dev" and "tool" on adjacent components, leading to results like
+        //    "dev/my-tool" being possible.
+        // 6) Levenshtein distance may be fallen back upon for real "fuzzyness", but should be
+        //    weighted carefully low; sometimes it is better to force a user to make a new query
+        //    than to make too strange of a shot in the dark.
+
+        let em = ExactMatcher {};
+        let sm = SubstringMatcher {};
+        let ci_em = CaseInsensitiveMatcher::new(&em);
+        let pc_em = PathComponentMatcher::new(&em);
+        let pc_sm = PathComponentMatcher::new(&sm);
+        let pc_ci_em = PathComponentMatcher::new(&ci_em);
+        let ci_sm = CaseInsensitiveMatcher::new(&sm);
+        let pc_ci_sm = PathComponentMatcher::new(&ci_sm);
+        let matchers: Vec<&Matcher> = vec![
+            &ExactMatcher {},
+            &ci_em,
+            &pc_em,
+            &pc_sm,
+            &pc_ci_em,
+            &SubstringMatcher {},
+            &ci_sm,
+            &pc_ci_sm,
+        ];
+
+        let best = self.items_with_normalized_frecency()
+            .iter()
+            .flat_map(|item| {
+                matchers
+                    .iter()
+                    .filter_map(move |m| match m.matches(item.0, filter) {
+                        Some(v) => Some((item.0, v * 0.8 + (item.1 + 1.0) / 2.0 * 0.2)),
+                        None => None,
+                    })
+            })
+            .max_by(|lhs, rhs| {
+                // unwrap for NaN which shouldn't happen
+                lhs.1.partial_cmp(&rhs.1).unwrap()
+            });
+
+
+        best.and_then(|el| {
+            if el.1 > (0.5 * 0.5) {
+                Some(el.0)
+            } else {
+                debug!("discarding {} with score {}", el.0, el.1);
+                None
             }
-        }
-        None
+        })
     }
 }

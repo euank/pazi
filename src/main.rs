@@ -1,12 +1,16 @@
 #[macro_use]
 extern crate clap;
+extern crate env_logger;
 extern crate libc;
+#[macro_use]
+extern crate log;
 extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate xdg;
 
+mod matcher;
 mod frecency;
 mod frecent_paths;
 
@@ -23,6 +27,12 @@ fn main() {
         .about("An autojump tool for zsh")
         .version(crate_version!())
         .author(crate_authors!())
+        .arg(
+            Arg::with_name("debug")
+                .help("print debug information to stderr")
+                .long("debug")
+                .env("PAZI_DEBUG"),
+        )
         .arg(
             Arg::with_name("init")
                 .help("provide initialization hooks to eval in your shell")
@@ -43,9 +53,7 @@ fn main() {
                 .takes_value(true)
                 .value_name("directory"),
         )
-        .group(
-            ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]),
-        )
+        .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
         .get_matches();
 
     if flags.is_present("init") {
@@ -70,6 +78,13 @@ alias z='pazi_cd'
         );
         std::process::exit(0);
     };
+
+    if flags.is_present("debug") {
+        env_logger::LogBuilder::new()
+            .filter(None, log::LogLevelFilter::Debug)
+            .init()
+            .unwrap();
+    }
 
 
     let xdg_dirs =
@@ -101,7 +116,7 @@ alias z='pazi_cd'
                 print!("{}", dir);
                 process::exit(0);
             }
-            None => process::exit(1)
+            None => process::exit(1),
         }
     };
 

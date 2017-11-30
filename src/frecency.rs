@@ -82,8 +82,11 @@ where
         self.items_with_frecency().iter().map(|&(k, _)| k).collect()
     }
 
-    pub fn items_with_frecency(&self) -> Vec<(&T, &f64)> {
-        let mut v = self.frecency.iter().collect::<Vec<_>>();
+    pub fn items_with_frecency(&self) -> Vec<(&T, f64)> {
+        let mut v = self.frecency
+            .iter()
+            .map(|(ref t, f)| (*t, f.clone()))
+            .collect::<Vec<_>>();
         v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
             // Note: f64 doesn't implement ord, so we do a poor-man's ord here.
             // This is wrong for NaN, but fortunately we don't have those here.
@@ -96,6 +99,22 @@ where
             }
         });
         v
+    }
+
+    pub fn normalized_frecency(&self) -> Vec<(&T, f64)> {
+        let items = self.items_with_frecency();
+        if items.len() == 0 {
+            return items;
+        }
+        let min = items[items.len() - 1].1;
+        let max = items[0].1;
+        items
+            .into_iter()
+            .map(|(s, v)| {
+                let normalized = (v - min) / max;
+                (s, normalized)
+            })
+            .collect()
     }
 }
 
