@@ -8,11 +8,13 @@ extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate termion;
 extern crate xdg;
 
 mod matcher;
 mod frecency;
 mod frecent_paths;
+mod interactive;
 
 use std::process;
 
@@ -45,6 +47,12 @@ fn main() {
                 .short("d")
                 .takes_value(true)
                 .value_name("fuzzy directory search"),
+        )
+        .arg(
+            Arg::with_name("interactive")
+                .help("interactively search directory matches")
+                .long("interactive")
+                .short("i"),
         )
         .arg(
             Arg::with_name("add-dir")
@@ -112,12 +120,26 @@ alias z='pazi_cd'
     };
 
     if let Some(to) = flags.value_of("dir") {
-        match frecency.best_directory_match(to) {
-            Some(dir) => {
-                print!("{}", dir);
-                process::exit(0);
+        let matches = frecency.directory_matches(to);
+        if matches.len() == 0 {
+            process::exit(1);
+        }
+
+        if flags.is_present("interactive") {
+            match interactive::filter(matches, std::io::stdin(), std::io::stdout()) {
+                Ok(el) => {
+                    print!("{}", el);
+                    process::exit(0);
+                }
+                Err(e) => {
+                    println!("{}", e);
+                    process::exit(1);
+                }
             }
-            None => process::exit(1),
+        } else {
+            // unwrap is safe because of the 'matches.len() == 0' check above.
+            print!("{}", matches.first().unwrap().0);
+            process::exit(0);
         }
     };
 
