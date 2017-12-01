@@ -42,7 +42,8 @@ fn main() {
         )
         .arg(
             Arg::with_name("dir")
-                .help("print a directory matching a pattern; should be used via the 'z' function '--init' creates")
+                .help("print a directory matching a pattern; should be used via the 'z' function \
+                      '--init' creates")
                 .long("dir")
                 .short("d")
                 .requires("dir_target")
