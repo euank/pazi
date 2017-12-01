@@ -42,11 +42,10 @@ fn main() {
         )
         .arg(
             Arg::with_name("dir")
-                .help("show a directory matching a pattern")
+                .help("print a directory matching a pattern; should be used via the 'z' function '--init' creates")
                 .long("dir")
                 .short("d")
-                .takes_value(true)
-                .value_name("fuzzy directory search"),
+                .requires("dir_target")
         )
         .arg(
             Arg::with_name("interactive")
@@ -60,6 +59,9 @@ fn main() {
                 .long("add-dir")
                 .takes_value(true)
                 .value_name("directory"),
+        )
+        .arg(
+            Arg::with_name("dir_target")
         )
         .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
         .get_matches();
@@ -119,14 +121,17 @@ alias z='pazi_cd'
         }
     };
 
-    if let Some(to) = flags.value_of("dir") {
+    if flags.is_present("dir") {
+        // Safe to unwrap because 'dir' requires 'dir_target'
+        let to = flags.value_of("dir_target").unwrap();
         let matches = frecency.directory_matches(to);
         if matches.len() == 0 {
             process::exit(1);
         }
 
         if flags.is_present("interactive") {
-            match interactive::filter(matches, std::io::stdin(), std::io::stdout()) {
+            let stdout = termion::get_tty().unwrap();
+            match interactive::filter(matches, std::io::stdin(), &stdout) {
                 Ok(el) => {
                     print!("{}", el);
                     process::exit(0);

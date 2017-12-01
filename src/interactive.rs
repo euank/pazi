@@ -1,15 +1,16 @@
 use termion::screen::AlternateScreen;
-use std::io::{Stdin, Stdout, Write};
+use std::io::{Stdin, Write};
 use termion::{clear, cursor};
 use std::io::Error as IOErr;
 use std::fmt;
 use std::convert::From;
+use std::fs;
 
-pub fn filter(
-    opts: Vec<(&String, f64)>,
+pub fn filter<'a>(
+    opts: Vec<(&'a String, f64)>,
     stdin: Stdin,
-    stdout: Stdout,
-) -> Result<&String, FilterError> {
+    stdout: &'a fs::File,
+) -> Result<&'a String, FilterError> {
     let mut alt = AlternateScreen::from(stdout);
     write!(alt, "{}{}", clear::All, cursor::Goto(1, 1))?;
     for i in 0..opts.len() {
