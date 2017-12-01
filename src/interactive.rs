@@ -13,7 +13,7 @@ pub fn filter(
     let mut alt = AlternateScreen::from(stdout);
     write!(alt, "{}{}", clear::All, cursor::Goto(1, 1))?;
     for i in 0..opts.len() {
-        write!(alt, "{}\t{}\t{}\n", i, opts[i].1, opts[i].0)?;
+        write!(alt, "{}\t{}\t{}\n", opts.len() - i, opts[i].1, opts[i].0)?;
     }
     write!(alt, "> ")?;
     alt.flush()?;
@@ -26,7 +26,12 @@ pub fn filter(
         .parse::<usize>()
         .map_err(|err| format!("could not parse input: {}", err))?;
 
-    opts.get(chosen)
+    // handle separately from 'opts.get' to avoid underflow panicing
+    if chosen > opts.len() {
+        return Err(FilterError::String("index out of bounds".to_string()));
+    }
+
+    opts.get(opts.len() - chosen)
         .map(|e| e.0)
         .ok_or(FilterError::String("index out of bounds".to_string()))
 }
