@@ -46,7 +46,6 @@ fn main() {
                       '--init' creates")
                 .long("dir")
                 .short("d")
-                .requires("dir_target")
         )
         .arg(
             Arg::with_name("interactive")
@@ -124,8 +123,10 @@ alias z='pazi_cd'
 
     if flags.is_present("dir") {
         // Safe to unwrap because 'dir' requires 'dir_target'
-        let to = flags.value_of("dir_target").unwrap();
-        let matches = frecency.directory_matches(to);
+        let matches = match flags.value_of("dir_target") {
+            Some(to) => frecency.directory_matches(to),
+            None => frecency.items_with_normalized_frecency(),
+        };
         if matches.len() == 0 {
             process::exit(1);
         }

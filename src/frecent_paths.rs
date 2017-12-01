@@ -81,13 +81,19 @@ impl PathFrecency {
         let min = items[items.len() - 1].1;
         let max = items[0].1;
 
-        items
+        let mut matched: Vec<_> = items
             .into_iter()
             .map(|(s, v)| {
                 let normalized = (v - min) / max;
                 (s, normalized)
             })
-            .collect()
+            .collect();
+        matched.sort_by(|lhs, rhs| {
+            // unwrap for NaN which shouldn't happen
+            lhs.1.partial_cmp(&rhs.1).unwrap()
+        });
+
+        matched
     }
 
     pub fn directory_matches(&self, filter: &str) -> Vec<(&String, f64)> {
