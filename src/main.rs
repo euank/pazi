@@ -8,11 +8,13 @@ extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate termion;
 extern crate xdg;
 
 mod matcher;
 mod frecency;
 mod frecent_paths;
+mod interactive;
 
 use std::process;
 
@@ -40,11 +42,17 @@ fn main() {
         )
         .arg(
             Arg::with_name("dir")
-                .help("show a directory matching a pattern")
+                .help("print a directory matching a pattern; should be used via the 'z' function \
+                      '--init' creates")
                 .long("dir")
                 .short("d")
-                .takes_value(true)
-                .value_name("fuzzy directory search"),
+                .requires("dir_target")
+        )
+        .arg(
+            Arg::with_name("interactive")
+                .help("interactively search directory matches")
+                .long("interactive")
+                .short("i"),
         )
         .arg(
             Arg::with_name("add-dir")
@@ -52,6 +60,9 @@ fn main() {
                 .long("add-dir")
                 .takes_value(true)
                 .value_name("directory"),
+        )
+        .arg(
+            Arg::with_name("dir_target")
         )
         .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
         .get_matches();
@@ -111,13 +122,30 @@ alias z='pazi_cd'
         }
     };
 
-    if let Some(to) = flags.value_of("dir") {
-        match frecency.best_directory_match(to) {
-            Some(dir) => {
-                print!("{}", dir);
-                process::exit(0);
+    if flags.is_present("dir") {
+        // Safe to unwrap because 'dir' requires 'dir_target'
+        let to = flags.value_of("dir_target").unwrap();
+        let matches = frecency.directory_matches(to);
+        if matches.len() == 0 {
+            process::exit(1);
+        }
+
+        if flags.is_present("interactive") {
+            let stdout = termion::get_tty().unwrap();
+            match interactive::filter(matches, std::io::stdin(), &stdout) {
+                Ok(el) => {
+                    print!("{}", el);
+                    process::exit(0);
+                }
+                Err(e) => {
+                    println!("{}", e);
+                    process::exit(1);
+                }
             }
-            None => process::exit(1),
+        } else {
+            // unwrap is safe because of the 'matches.len() == 0' check above.
+            print!("{}", matches.first().unwrap().0);
+            process::exit(0);
         }
     };
 

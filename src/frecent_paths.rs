@@ -90,7 +90,7 @@ impl PathFrecency {
             .collect()
     }
 
-    pub fn best_directory_match(&self, filter: &str) -> Option<&String> {
+    pub fn directory_matches(&self, filter: &str) -> Vec<(&String, f64)> {
         // 'best directory' is a tricky concept, as is 'match.
         //
         // There's a continuum from "exact string match" to "no characters in common", and we
@@ -136,7 +136,7 @@ impl PathFrecency {
             &pc_ci_sm,
         ];
 
-        let best = self.items_with_normalized_frecency()
+        let mut matched = self.items_with_normalized_frecency()
             .iter()
             .flat_map(|item| {
                 matchers
@@ -146,19 +146,21 @@ impl PathFrecency {
                         None => None,
                     })
             })
-            .max_by(|lhs, rhs| {
-                // unwrap for NaN which shouldn't happen
-                lhs.1.partial_cmp(&rhs.1).unwrap()
-            });
+            .filter_map(|el| {
+                if el.1 > (0.5 * 0.5) {
+                    Some((el.0, el.1))
+                } else {
+                    debug!("discarding {} with score {}", el.0, el.1);
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
+        matched.sort_by(|lhs, rhs| {
+            // unwrap for NaN which shouldn't happen
+            lhs.1.partial_cmp(&rhs.1).unwrap()
+        });
 
-        best.and_then(|el| {
-            if el.1 > (0.5 * 0.5) {
-                Some(el.0)
-            } else {
-                debug!("discarding {} with score {}", el.0, el.1);
-                None
-            }
-        })
+        matched
     }
 }
