@@ -5,36 +5,64 @@ use std::io::Error as IOErr;
 use std::fmt;
 use std::convert::From;
 use std::fs;
+use std::thread;
+use chan_signal;
+use chan;
 
 pub fn filter<'a>(
     opts: Vec<(&'a String, f64)>,
     stdin: Stdin,
-    stdout: &'a fs::File,
-) -> Result<&'a String, FilterError> {
+    stdout: fs::File,
+) -> Result<String, FilterError> {
+    // So, this is a massive abstraction leak, but unix signals are icky so it's not really
+    // surprising.
+    // Because we're popping over to an alternative screen buffer, we need to restore the teriminal
+    // when we're done, even if we get sigint / sigterm.
+    // This mess is to handle that.
+    // Basically, to restore the screen buffer we just need to return from this fn so
+    // 'alt' is dropped.
+    // We do this by waiting for signals or user-input, and just returning on whichever we see
+    // first.
+    // That makes 'sigint'/'sigterm' result in us exiting.
     let mut alt = AlternateScreen::from(stdout);
+    let signal = chan_signal::notify(&[chan_signal::Signal::INT, chan_signal::Signal::TERM]);
+    let (suser_input, ruser_input) = chan::sync(0);
+    // Wait for a signal or for the user to select a choice.
     write!(alt, "{}{}", clear::All, cursor::Goto(1, 1))?;
     for i in 0..opts.len() {
         write!(alt, "{}\t{}\t{}\n", opts.len() - i, opts[i].1, opts[i].0)?;
     }
     write!(alt, "> ")?;
     alt.flush()?;
-    let mut input = String::new();
-    stdin
-        .read_line(&mut input)
-        .map_err(|err| format!("could not read stdin: {}", err))?;
-    let chosen = input
-        .trim()
-        .parse::<usize>()
-        .map_err(|err| format!("could not parse input: {}", err))?;
-
-    // handle separately from 'opts.get' to avoid underflow panicing
-    if chosen > opts.len() {
-        return Err(FilterError::String("index out of bounds".to_string()));
-    }
-
-    opts.get(opts.len() - chosen)
-        .map(|e| e.0)
-        .ok_or(FilterError::String("index out of bounds".to_string()))
+    thread::spawn(move || {
+        // Since threads can be messy, do the minimum possible in the thread.
+        let mut input = String::new();
+        suser_input.send(stdin.read_line(&mut input).map(|_| input));
+    });
+    chan_select! {
+        signal.recv() =>  {
+            return Err(FilterError::String("interrupted".to_string()));
+        },
+        ruser_input.recv() -> res => {
+            return res.unwrap()
+                .map_err(|_| FilterError::String("unable to read input".to_string()))
+                .and_then(|val| {
+                    val.trim().parse::<usize>()
+                        .map_err(|e| FilterError::String(format!("unable to parse selection: {}", e)))
+                })
+                .and_then(|ndx| {
+                    if ndx > opts.len() {
+                        Err(FilterError::String("index out of bounds".to_string()))
+                    } else if ndx > opts.len() {
+                        // handle separately from 'opts.get' to avoid underflow panicing
+                        Err(FilterError::String("index out of bounds".to_string()))
+                    } else {
+                        opts.get(opts.len() - ndx).map(|o| o.0.clone())
+                            .ok_or(FilterError::String("index out of bounds".to_string()))
+                    }
+                });
+        },
+    };
 }
 
 #[derive(Debug)]

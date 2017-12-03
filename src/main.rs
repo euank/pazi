@@ -1,4 +1,7 @@
 #[macro_use]
+extern crate chan;
+extern crate chan_signal;
+#[macro_use]
 extern crate clap;
 extern crate env_logger;
 extern crate libc;
@@ -133,7 +136,7 @@ alias z='pazi_cd'
 
         if flags.is_present("interactive") {
             let stdout = termion::get_tty().unwrap();
-            match interactive::filter(matches, std::io::stdin(), &stdout) {
+            match interactive::filter(matches, std::io::stdin(), stdout) {
                 Ok(el) => {
                     print!("{}", el);
                     process::exit(0);
