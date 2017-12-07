@@ -75,7 +75,7 @@ impl PathFrecency {
 
     pub fn items_with_normalized_frecency(&self) -> Vec<(&String, f64)> {
         let items = self.frecency.normalized_frecency();
-        if items.len() == 0 {
+        if items.len() < 2 {
             return items;
         }
         let min = items[items.len() - 1].1;
