@@ -83,7 +83,7 @@ where
         }
     }
 
-    pub fn items(&self) -> Vec<&T> {
+    fn items(&self) -> Vec<&T> {
         self.items_with_frecency().iter().map(|&(k, _)| k).collect()
     }
 
@@ -93,15 +93,7 @@ where
             .map(|(ref t, f)| (*t, f.clone()))
             .collect::<Vec<_>>();
         v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
-            // Note: f64 doesn't implement ord, so we do a poor-man's ord here.
-            // This is wrong for NaN, but fortunately we don't have those here.
-            if lhs < rhs {
-                cmp::Ordering::Less
-            } else if lhs > rhs {
-                cmp::Ordering::Greater
-            } else {
-                cmp::Ordering::Equal
-            }
+            lhs.partial_cmp(&rhs).expect(&format!("{} could not be compared to {}", lhs, rhs))
         });
         v
     }
