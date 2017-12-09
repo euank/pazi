@@ -8,6 +8,15 @@ rust:
   - beta
   - nightly
 
+addons:
+  apt:
+    packages:
+    - zsh
+
+env:
+  global:
+  - RUST_BACKTRACE=1
+
 script:
 - cargo build --verbose --examples
-- cargo test
+- cargo test --features integ-tests -v
