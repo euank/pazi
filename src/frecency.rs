@@ -4,6 +4,7 @@ use std::collections::hash_map::Entry;
 use std::f64;
 use std::hash::Hash;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::fmt;
 
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);
 
@@ -21,7 +22,7 @@ where
 
 impl<T> Frecency<T>
 where
-    T: Hash + Eq + Ord + Clone,
+    T: Hash + Eq + Ord + Clone + fmt::Debug,
 {
     pub fn new(max_size: usize) -> Self {
         Frecency {
@@ -40,12 +41,15 @@ where
         // there.
         let now_secs = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
         let now_decay = now_secs as f64 * DECAY_RATE;
+        debug!("upserting {:?}", key);
         match self.frecency.entry(key) {
             Entry::Occupied(mut e) => {
                 let frecency = e.get_mut();
                 *frecency = ((*frecency - now_decay).exp() + 1f64).ln() + now_decay;
+                debug!("Changed to {}", *frecency);
             }
             Entry::Vacant(e) => {
+                debug!("Adding with {}", now_decay);
                 e.insert(now_decay);
             }
         };
