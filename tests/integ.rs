@@ -2,7 +2,7 @@
 mod integ_tests {
     extern crate tempdir;
     use self::tempdir::TempDir;
-    use std::process::{Command, Stdio};
+    use std::process::{Command, Stdio, Output};
     use std::path::{Path, PathBuf};
     use std::fs;
     use std::io::Write;
@@ -84,6 +84,27 @@ eval "$("{0}" --init {1})"
             h
         }
 
+        fn icmd(&self, cmd: &str) -> Output {
+            match self.shell.as_str() {
+                "bash" => {
+                    Command::new(&self.shell)
+                        .env("HOME", Path::new(&self.root).join("home/pazi"))
+                        .env("BASH_ENV", "$HOME/.bashrc")
+                        .env("BASHOPTS", "expand_aliases")
+                        .args(vec!["--rcfile", ".bashrc", "-c", cmd])
+                        .output()
+                        .unwrap()
+                },
+                _ => {
+                    Command::new(&self.shell)
+                        .env("HOME", Path::new(&self.root).join("home/pazi"))
+                        .args(vec!["-i", "-c", cmd])
+                        .output()
+                        .unwrap()
+                },
+            }
+        }
+
         fn create_dir(&self, path: &str) {
             let p = Path::new(&self.root).join(Path::new(path).strip_prefix("/").unwrap());
             fs::create_dir_all(p).unwrap();
@@ -91,26 +112,12 @@ eval "$("{0}" --init {1})"
 
         fn visit_dir(&self, path: &str) {
             let p = Path::new(&self.root).join(Path::new(path).strip_prefix("/").unwrap());
-            let status = Command::new(&self.shell)
-                .env("HOME", Path::new(&self.root).join("home/pazi"))
-                .args(vec![
-                    "-i",
-                    "-c",
-                    &format!("cd '{}'", p.to_string_lossy().to_string()),
-                ])
-                .stdin(Stdio::null())
-                .status()
-                .unwrap();
-            assert!(status.success());
+            let out = self.icmd(&format!("cd '{}'", p.to_string_lossy().to_string()));
+            assert!(out.status.success());
         }
 
         fn jump(&self, search: &str) -> String {
-            let output = Command::new(&self.shell)
-                .env("HOME", Path::new(&self.root).join("home/pazi"))
-                .args(vec!["-i", "-c", &format!("z '{}' && pwd", search)])
-                .stdin(Stdio::null())
-                .output()
-                .unwrap();
+            let output = self.icmd(&format!("z '{}' && pwd", search));
             if !output.status.success() {
                 panic!(
                     "jumping exited with error: {}: {}, {}",
