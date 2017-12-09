@@ -40,7 +40,8 @@ fn main() {
         )
         .arg(
             Arg::with_name("init")
-                .help("provide initialization hooks to eval in your shell")
+                .help("provide initialization hooks to eval in the given shell")
+                .takes_value(true)
                 .long("init"),
         )
         .arg(
@@ -69,10 +70,11 @@ fn main() {
         .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
         .get_matches();
 
-    if flags.is_present("init") {
-        println!(
-            "{}",
-            r#"
+    match flags.value_of("init") {
+        Some("zsh") => {
+            println!(
+                "{}",
+                r#"
 __pazi_add_dir() {
     pazi --add-dir "${PWD}"
 }
@@ -83,15 +85,53 @@ add-zsh-hook chpwd __pazi_add_dir
 pazi_cd() {
     [ "$#" -eq 0 ] && pazi && return 0
     [[ "$@[(r)--help]" == "--help" ]] && pazi --help && return 0
-    local to=$(pazi --dir "$@")
+    local to="$(pazi --dir "$@")"
     [ -z "${to}" ] && return 1
     cd "${to}"
 }
 alias z='pazi_cd'
 "#
-        );
-        std::process::exit(0);
-    };
+            );
+            std::process::exit(0);
+        }
+        Some("bash") => {
+            // ty to mklement0 for this suggested append method:
+            // https://stackoverflow.com/questions/3276247/is-there-a-hook-in-bash-to-find-out-when-the-cwd-changes#comment35222599_3276280
+            // Used under cc by-sa 3.0
+            println!(
+                "{}",
+                r#"
+__pazi_add_dir() {
+    # TODO: should pazi keep track of this itself in its datadir?
+    if [[ "${__PAZI_LAST_PWD}" != "${PWD}" ]]; then
+        pazi --add-dir "${PWD}"
+    fi
+    __PAZI_LAST_PWD="${PWD}"
+}
+
+if [[ -z "${PROMPT_COMMAND}" ]]; then
+    PROMPT_COMMAND="__pazi_add_dir;"
+else
+    PROMPT_COMMAND="$(read newVal <<<"$PROMPT_COMMAND"; echo "${newVal%;}; __pazi_add_dir;")"
+fi
+
+pazi_cd() {
+    [ "$#" -eq 0 ] && pazi && return 0
+    local to="$(pazi --dir "$@")"
+    [ -z "${to}" ] && return 1
+    cd "${to}"
+}
+alias z='pazi_cd'
+"#
+            );
+            std::process::exit(0);
+        }
+        None => {}
+        Some(s) => {
+            println!("{}\n\nUnsupported shell: {}", flags.usage(), s);
+            std::process::exit(1);
+        }
+    }
 
     if flags.is_present("debug") {
         env_logger::LogBuilder::new()
