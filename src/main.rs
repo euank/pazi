@@ -45,10 +45,12 @@ fn main() {
         )
         .arg(
             Arg::with_name("dir")
-                .help("print a directory matching a pattern; should be used via the 'z' function \
-                      '--init' creates")
+                .help(
+                    "print a directory matching a pattern; should be used via the 'z' function \
+                     '--init' creates",
+                )
                 .long("dir")
-                .short("d")
+                .short("d"),
         )
         .arg(
             Arg::with_name("interactive")
@@ -63,9 +65,7 @@ fn main() {
                 .takes_value(true)
                 .value_name("directory"),
         )
-        .arg(
-            Arg::with_name("dir_target")
-        )
+        .arg(Arg::with_name("dir_target"))
         .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
         .get_matches();
 

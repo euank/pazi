@@ -77,7 +77,9 @@ impl PathFrecency {
         let mut items = self.frecency.normalized_frecency();
         items.sort_by(|lhs, rhs| {
             // NaN shouldn't happen
-            lhs.1.partial_cmp(&rhs.1).expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
+            lhs.1
+                .partial_cmp(&rhs.1)
+                .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
 
         items
@@ -152,7 +154,9 @@ impl PathFrecency {
 
         matched.sort_by(|lhs, rhs| {
             // NaN shouldn't happen
-            rhs.1.partial_cmp(&lhs.1).expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
+            rhs.1
+                .partial_cmp(&lhs.1)
+                .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
 
         matched

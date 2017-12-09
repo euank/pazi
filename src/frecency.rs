@@ -92,7 +92,8 @@ where
             .map(|(ref t, f)| (*t, f.clone()))
             .collect::<Vec<_>>();
         v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
-            lhs.partial_cmp(&rhs).expect(&format!("{} could not be compared to {}", lhs, rhs))
+            lhs.partial_cmp(&rhs)
+                .expect(&format!("{} could not be compared to {}", lhs, rhs))
         });
         v
     }

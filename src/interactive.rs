@@ -48,7 +48,9 @@ pub fn filter<'a>(
                 .map_err(|_| FilterError::String("unable to read input".to_string()))
                 .and_then(|val| {
                     val.trim().parse::<usize>()
-                        .map_err(|e| FilterError::String(format!("unable to parse selection: {}", e)))
+                        .map_err(|e| {
+                            FilterError::String(format!("unable to parse selection: {}", e))
+                        })
                 })
                 .and_then(|ndx| {
                     if ndx > opts.len() {
