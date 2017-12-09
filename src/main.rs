@@ -128,7 +128,7 @@ alias z='pazi_cd'
         // Safe to unwrap because 'dir' requires 'dir_target'
         let matches = match flags.value_of("dir_target") {
             Some(to) => frecency.directory_matches(to),
-            None => frecency.items_with_normalized_frecency(),
+            None => frecency.items_with_frecency(),
         };
         if matches.len() == 0 {
             process::exit(1);
@@ -154,7 +154,7 @@ alias z='pazi_cd'
     };
 
     // By default print the frecency
-    for el in frecency.items_with_normalized_frecency() {
+    for el in frecency.items_with_frecency() {
         println!("{:.4}\t{}", el.1 * 100f64, el.0);
     }
 }

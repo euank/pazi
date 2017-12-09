@@ -73,27 +73,14 @@ impl PathFrecency {
         })
     }
 
-    pub fn items_with_normalized_frecency(&self) -> Vec<(&String, f64)> {
-        let items = self.frecency.normalized_frecency();
-        if items.len() < 2 {
-            return items;
-        }
-        let min = items[items.len() - 1].1;
-        let max = items[0].1;
-
-        let mut matched: Vec<_> = items
-            .into_iter()
-            .map(|(s, v)| {
-                let normalized = (v - min) / max;
-                (s, normalized)
-            })
-            .collect();
-        matched.sort_by(|lhs, rhs| {
-            // unwrap for NaN which shouldn't happen
-            lhs.1.partial_cmp(&rhs.1).unwrap()
+    pub fn items_with_frecency(&self) -> Vec<(&String, f64)> {
+        let mut items = self.frecency.normalized_frecency();
+        items.sort_by(|lhs, rhs| {
+            // NaN shouldn't happen
+            lhs.1.partial_cmp(&rhs.1).expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
 
-        matched
+        items
     }
 
     pub fn directory_matches(&self, filter: &str) -> Vec<(&String, f64)> {
@@ -142,18 +129,19 @@ impl PathFrecency {
             &pc_ci_sm,
         ];
 
-        let mut matched = self.items_with_normalized_frecency()
+        let mut matched = self.items_with_frecency()
             .iter()
             .flat_map(|item| {
                 matchers
                     .iter()
                     .filter_map(move |m| match m.matches(item.0, filter) {
-                        Some(v) => Some((item.0, v * 0.8 + (item.1 + 1.0) / 2.0 * 0.2)),
+                        Some(v) => Some((item.0, v * 0.8 + item.1 * 0.2)),
                         None => None,
                     })
             })
             .filter_map(|el| {
                 if el.1 > (0.5 * 0.5) {
+                    debug!("accepting {} with score {}", el.0, el.1);
                     Some((el.0, el.1))
                 } else {
                     debug!("discarding {} with score {}", el.0, el.1);
@@ -163,8 +151,8 @@ impl PathFrecency {
             .collect::<Vec<_>>();
 
         matched.sort_by(|lhs, rhs| {
-            // unwrap for NaN which shouldn't happen
-            lhs.1.partial_cmp(&rhs.1).unwrap()
+            // NaN shouldn't happen
+            rhs.1.partial_cmp(&lhs.1).expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
 
         matched

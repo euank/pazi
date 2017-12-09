@@ -1,4 +1,3 @@
-use std::cmp;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::f64;
@@ -108,8 +107,12 @@ where
         items
             .into_iter()
             .map(|(s, v)| {
-                let normalized = (v - min) / max;
-                (s, normalized)
+                let normalized = (v - min) / (max - min);
+                if normalized.is_nan() {
+                    (s, 0.0)
+                } else {
+                    (s, normalized)
+                }
             })
             .collect()
     }
