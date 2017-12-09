@@ -39,8 +39,9 @@ where
     fn visit_with_time(&mut self, key: T, now: SystemTime) {
         // The only error here is if the system clock is before the unix epoch. I'm fine panicing
         // there.
-        let now_secs = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
-        let now_decay = now_secs as f64 * DECAY_RATE;
+        let since_epoch = now.duration_since(UNIX_EPOCH).unwrap();
+        let now_secs = since_epoch.as_secs() as f64 + since_epoch.subsec_nanos() as f64 * 1e-9;
+        let now_decay = now_secs * DECAY_RATE;
         debug!("upserting {:?}", key);
         match self.frecency.entry(key) {
             Entry::Occupied(mut e) => {
