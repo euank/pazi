@@ -24,7 +24,7 @@ mod integ_tests {
 
         h.create_dir("/tmp");
         h.visit_dir("/tmp");
-        assert_eq!(h.jump("t"), "/tmp");
+        assert_eq!(h.jump("tmp"), "/tmp");
     }
 
     #[test]
