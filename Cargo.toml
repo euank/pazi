@@ -1,7 +1,13 @@
 [package]
 name = "pazi"
 version = "0.0.1"
+description = "A fast autojump helper"
 authors = ["Euan Kemp <euank@euank.com>"]
+homepage = "https://github.com/euank/pazi"
+repository = "https://github.com/euank/pazi"
+readme = "README.md"
+keywords = ["autojump", "shell", "productivity-tool"]
+license = "GPL-3.0"
 
 [dependencies]
 clap = "~2"
