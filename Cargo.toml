@@ -1,22 +1,22 @@
 [package]
 name = "pazi"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Euan Kemp <euank@euank.com>"]
 
 [dependencies]
-clap = "*"
-rmp-serde = "*"
-serde = "*"
-serde_derive = "*"
-xdg = "*"
-libc = "*"
-env_logger = "*"
-log = "*"
-termion = "*"
-chan = "*"
-chan-signal = "*"
+clap = "~2"
+rmp-serde = "~0.13"
+serde = "~1"
+serde_derive = "~1"
+xdg = "~2"
+libc = "~0.2"
+env_logger = "~0.4"
+log = "~0.3"
+termion = "~1"
+chan = "~0.1"
+chan-signal = "~0.3"
 
-tempdir = { version = "*", optional = true }
+tempdir = { version = "~0.3", optional = true }
 
 
 [features]
