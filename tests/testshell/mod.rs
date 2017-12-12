@@ -11,6 +11,7 @@ use std::thread;
 
 pub struct TestShell {
     // fork is here for lifetime reasons; can't drop it until the pty is done
+    #[allow(unused)]
     fork: pty::fork::Fork,
     pty: pty::fork::Master,
     output: mpsc::Receiver<String>,
@@ -44,25 +45,31 @@ impl vte::Perform for VTEData {
     }
 
     fn execute(&mut self, byte: u8) {
-        if byte as char == '\n' {
-            self.scrollback.push(self.current_line.clone());
-            self.current_line = String::new();
-        } else if byte as char == '\r' {
-            self.current_line_cursor = 0;
-        } else if byte == 8 {
-            // backspace
-            if self.current_line_cursor > 0 {
-                self.current_line_cursor -= 1;
-                self.current_line.pop();
+        match byte as char {
+            '\n' => {
+                self.scrollback.push(self.current_line.clone());
+                self.current_line = String::new();
+            },
+            '\r' => {
+                self.current_line_cursor = 0;
+            }
+            '\x08' => { // backspace
+                if self.current_line_cursor > 0 {
+                    self.current_line_cursor -= 1;
+                    self.current_line.pop();
+                }
+            }
+            _ => {
+                println!("[VTEData execute]: ignoring {}", byte);
             }
         }
     }
 
-    fn hook(&mut self, params: &[i64], intermediates: &[u8], ignore: bool) {
+    fn hook(&mut self, _: &[i64], _: &[u8], _: bool) {
         // ignore
     }
 
-    fn put(&mut self, byte: u8) {
+    fn put(&mut self, _: u8) {
         // ignore
     }
 
@@ -70,15 +77,15 @@ impl vte::Perform for VTEData {
         // ignore
     }
 
-    fn osc_dispatch(&mut self, params: &[&[u8]]) {
+    fn osc_dispatch(&mut self, _: &[&[u8]]) {
         // ignore
     }
 
-    fn csi_dispatch(&mut self, params: &[i64], intermediates: &[u8], ignore: bool, c: char) {
+    fn csi_dispatch(&mut self, _: &[i64], _: &[u8], _: bool, _: char) {
         // ignore
     }
 
-    fn esc_dispatch(&mut self, params: &[i64], intermediates: &[u8], ignore: bool, byte: u8) {
+    fn esc_dispatch(&mut self, _: &[i64], _: &[u8], _: bool, _: u8) {
         // ignore
     }
 }
