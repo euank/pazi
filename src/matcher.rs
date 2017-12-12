@@ -78,7 +78,6 @@ impl<'a> Matcher for PathComponentMatcher<'a> {
     }
 }
 
-
 pub struct TransformedMatcher<'a> {
     input_transformation: fn(input: &str) -> String,
     search_transformation: fn(input: &str) -> String,

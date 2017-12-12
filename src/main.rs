@@ -24,7 +24,6 @@ use std::process;
 use clap::{App, Arg, ArgGroup};
 use frecent_paths::PathFrecency;
 
-
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
 fn main() {
@@ -139,7 +138,6 @@ alias z='pazi_cd'
             .init()
             .unwrap();
     }
-
 
     let xdg_dirs =
         xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
