@@ -28,7 +28,7 @@ struct VTEData {
 
 impl VTEData {
     fn new() -> Self {
-        VTEData{
+        VTEData {
             current_line_cursor: 0,
             current_line: String::new(),
             scrollback: Vec::new(),
@@ -139,18 +139,24 @@ impl TestShell {
                         continue;
                     }
 
-                    if data.current_line == ps12 && last_prompt_scrollback_count < data.scrollback.len() as i32 {
+                    if data.current_line == ps12
+                        && last_prompt_scrollback_count < data.scrollback.len() as i32
+                    {
                         // Exactly equal to PS1 means that there's a new blank PS1 prompt
                         // Either we just started up, or a command just finished.
                         if last_prompt_scrollback_count != -1 {
                             // not startup, sometihng finished
-                            write_command_out.send(current_command_output.join("\n")).unwrap();
+                            write_command_out
+                                .send(current_command_output.join("\n"))
+                                .unwrap();
                             current_command_output = Vec::new();
                         }
                         // mark that we've seen this prompt, don't handle it again even if there's
                         // backspacing
                         last_prompt_scrollback_count = data.scrollback.len() as i32;
-                    } else if data.scrollback.len() > last_data.scrollback.len() && last_prompt_scrollback_count != -1 {
+                    } else if data.scrollback.len() > last_data.scrollback.len()
+                        && last_prompt_scrollback_count != -1
+                    {
                         // this only happens if the last character was a newline since we're
                         // checking this every statemachine advance.
                         let last_line = data.scrollback.last().unwrap();
@@ -169,7 +175,7 @@ impl TestShell {
             }
         });
 
-        TestShell{
+        TestShell {
             fork: fork,
             pty: pty,
             eof: eof_got,
@@ -188,12 +194,17 @@ impl TestShell {
     }
 }
 
-#[test]
-fn testshell() {
-    let cmd = Command::new("bash");
-    let mut ts = TestShell::new(cmd, "==> ");
-    assert_eq!(ts.run("echo hi"), "hi");
-    assert_eq!(ts.run("echo foo"), "foo");
-    assert_eq!(ts.run(r#"echo -e "foo\nbar\nbaz" | tac"#), "baz\nbar\nfoo");
-    ts.shutdown();
+#[cfg(features = "testshell-dev")]
+mod dev {
+    use std::process::Command;
+    use super::TestShell;
+    #[test]
+    fn testshell() {
+        let mut cmd = Command::new("zsh");
+        let mut ts = TestShell::new(cmd, "==> ");
+        assert_eq!(ts.run("cd /tmp"), "");
+        assert_eq!(ts.run("echo foo"), "foo");
+        assert_eq!(ts.run(r#"echo -e "foo\nbar\nbaz" | tac"#), "baz\nbar\nfoo");
+        ts.shutdown();
+    }
 }
