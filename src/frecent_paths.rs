@@ -15,7 +15,6 @@ pub struct PathFrecency {
     path: PathBuf,
 }
 
-
 impl PathFrecency {
     // load loads or, if it doesn't exist, creates a path frecency db at a given location
     pub fn load(path: &Path) -> Self {
@@ -68,9 +67,8 @@ impl PathFrecency {
         self.frecency
             .serialize(&mut rmp_serde::Serializer::new(tmpfile))
             .map_err(|_| "could not create tmpfile".to_string())?;
-        fs::rename(tmpfile_path, &self.path).map_err(|e| {
-            format!("could not atomically rename: {}", e).to_string()
-        })
+        fs::rename(tmpfile_path, &self.path)
+            .map_err(|e| format!("could not atomically rename: {}", e).to_string())
     }
 
     pub fn items_with_frecency(&self) -> Vec<(&String, f64)> {

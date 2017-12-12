@@ -18,7 +18,6 @@ where
     max_size: usize,
 }
 
-
 impl<T> Frecency<T>
 where
     T: Hash + Eq + Ord + Clone + fmt::Debug,
