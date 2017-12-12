@@ -39,7 +39,7 @@ impl VTEData {
 impl vte::Perform for VTEData {
     fn print(&mut self, c: char) {
         self.current_line.truncate(self.current_line_cursor);
-        self.current_line_cursor+=1;
+        self.current_line_cursor += 1;
         self.current_line.push(c);
     }
 
@@ -49,6 +49,12 @@ impl vte::Perform for VTEData {
             self.current_line = String::new();
         } else if byte as char == '\r' {
             self.current_line_cursor = 0;
+        } else if byte == 8 {
+            // backspace
+            if self.current_line_cursor > 0 {
+                self.current_line_cursor -= 1;
+                self.current_line.pop();
+            }
         }
     }
 
@@ -115,7 +121,7 @@ impl TestShell {
             let mut last_data = data.clone();
 
             // Have we seen the starting PS1 yet?
-            let mut initial_prompt = false;
+            let mut last_prompt_scrollback_count = -1;
             // What's been output since the last PS1 + command happened?
             let mut current_command_output = Vec::new();
             loop {
@@ -132,18 +138,19 @@ impl TestShell {
                         // control character or whatever, we don't care
                         continue;
                     }
-                    // More characters have been pushed on, let's see what we have
 
-                    if data.current_line == ps12 {
+                    if data.current_line == ps12 && last_prompt_scrollback_count < data.scrollback.len() as i32 {
                         // Exactly equal to PS1 means that there's a new blank PS1 prompt
                         // Either we just started up, or a command just finished.
-                        if !initial_prompt {
+                        if last_prompt_scrollback_count != -1 {
                             // not startup, sometihng finished
                             write_command_out.send(current_command_output.join("\n")).unwrap();
                             current_command_output = Vec::new();
                         }
-                        initial_prompt = false;
-                    } else if data.scrollback.len() > last_data.scrollback.len() {
+                        // mark that we've seen this prompt, don't handle it again even if there's
+                        // backspacing
+                        last_prompt_scrollback_count = data.scrollback.len() as i32;
+                    } else if data.scrollback.len() > last_data.scrollback.len() && last_prompt_scrollback_count != -1 {
                         // this only happens if the last character was a newline since we're
                         // checking this every statemachine advance.
                         let last_line = data.scrollback.last().unwrap();
@@ -161,9 +168,6 @@ impl TestShell {
                 }
             }
         });
-
-        // Receive an initial "empty string" thing I tried to skip above but failed to :shrug:
-        command_out.recv().unwrap();
 
         TestShell{
             fork: fork,
