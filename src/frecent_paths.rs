@@ -3,6 +3,7 @@
 
 use frecency::Frecency;
 use std::path::{Path, PathBuf};
+use std::collections::HashMap;
 use std::fs;
 use serde::Serialize;
 use serde;
@@ -129,7 +130,7 @@ impl PathFrecency {
             &pc_ci_sm,
         ];
 
-        let mut matched = self.items_with_frecency()
+        let matched = self.items_with_frecency()
             .iter()
             .flat_map(|item| {
                 matchers
@@ -150,13 +151,29 @@ impl PathFrecency {
             })
             .collect::<Vec<_>>();
 
-        matched.sort_by(|lhs, rhs| {
+        // Remove dupe paths, keeping only each with the highest score
+        let mut dedupe_map: HashMap<&String, f64> = HashMap::new();
+        for el in &matched {
+            match dedupe_map.get(el.0) {
+                Some(&val) => {
+                    if el.1 > val {
+                        dedupe_map.insert(el.0, el.1);
+                    }
+                }
+                None => {
+                    dedupe_map.insert(el.0, el.1);
+                }
+            }
+        }
+
+        let mut deduped = dedupe_map.into_iter().collect::<Vec<_>>();
+        deduped.sort_by(|lhs, rhs| {
             // NaN shouldn't happen
-            rhs.1
-                .partial_cmp(&lhs.1)
+            lhs.1
+                .partial_cmp(&rhs.1)
                 .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
 
-        matched
+        deduped
     }
 }
