@@ -2,19 +2,14 @@
 mod testshell;
 #[cfg(feature = "integ-tests")]
 mod integ_tests {
-    extern crate chan_signal;
     extern crate pty;
     extern crate tempdir;
     use super::testshell::TestShell;
-    use std::thread;
     use self::tempdir::TempDir;
-    use std::sync::mpsc;
     use std::process::Command;
-    use std::os::unix::process::CommandExt;
     use std::path::{Path, PathBuf};
     use std::fs;
     use std::io::Write;
-    use std::io::Read;
     use std::env;
     use std::time::Duration;
     use std::thread::sleep;
