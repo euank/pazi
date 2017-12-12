@@ -55,6 +55,9 @@ mod integ_tests {
         // Visiting 'a' more often should make it more 'frecent'
         for _ in 0..10 {
             h.visit_dir("/a/tmp");
+            // visit another directory between since 'cd' to the same directory you're in doesn't
+            // necessarily increase frecency.
+            h.visit_dir("/");
         }
         h.visit_dir("/b/tmp");
         assert_eq!(h.jump("tmp"), "/a/tmp");
