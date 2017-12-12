@@ -186,7 +186,7 @@ alias z='pazi_cd'
             }
         } else {
             // unwrap is safe because of the 'matches.len() == 0' check above.
-            print!("{}", matches.first().unwrap().0);
+            print!("{}", matches.last().unwrap().0);
             process::exit(0);
         }
     };
