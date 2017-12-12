@@ -23,7 +23,7 @@ chan = "~0.1"
 chan-signal = "~0.3"
 
 tempdir = { version = "~0.3", optional = true }
-pty = { version = "*", optional = true }
+pty = { version = "~0.2", optional = true }
 vte = { version = "~0.3", optional = true }
 
 
