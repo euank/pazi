@@ -21,6 +21,7 @@ pub struct TestShell {
 // It keeps track of newlines and such
 #[derive(PartialEq, Clone, Debug)]
 struct VTEData {
+    current_line_cursor: usize,
     pub current_line: String,
     pub scrollback: Vec<String>,
 }
@@ -28,6 +29,7 @@ struct VTEData {
 impl VTEData {
     fn new() -> Self {
         VTEData{
+            current_line_cursor: 0,
             current_line: String::new(),
             scrollback: Vec::new(),
         }
@@ -36,6 +38,8 @@ impl VTEData {
 
 impl vte::Perform for VTEData {
     fn print(&mut self, c: char) {
+        self.current_line.truncate(self.current_line_cursor);
+        self.current_line_cursor+=1;
         self.current_line.push(c);
     }
 
@@ -43,6 +47,8 @@ impl vte::Perform for VTEData {
         if byte as char == '\n' {
             self.scrollback.push(self.current_line.clone());
             self.current_line = String::new();
+        } else if byte as char == '\r' {
+            self.current_line_cursor = 0;
         }
     }
 
