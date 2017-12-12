@@ -29,7 +29,12 @@ mod integ_tests {
 
     #[test]
     fn it_jumps() {
-        let mut h = Harness::new(&pazi_bin().join("pazi"), "zsh");
+        it_jumps_shell("zsh");
+        it_jumps_shell("bash");
+    }
+
+    fn it_jumps_shell(shell: &str) {
+        let mut h = Harness::new(&pazi_bin().join("pazi"), shell);
 
         h.create_dir("/tmp");
         h.visit_dir("/tmp");
@@ -38,7 +43,11 @@ mod integ_tests {
 
     #[test]
     fn it_jumps_to_more_frecent_items() {
-        let mut h = Harness::new(&pazi_bin().join("pazi"), "zsh");
+        it_jumps_to_more_frecent_items_shell("zsh");
+        it_jumps_to_more_frecent_items_shell("bash");
+    }
+    fn it_jumps_to_more_frecent_items_shell(shell: &str) {
+        let mut h = Harness::new(&pazi_bin().join("pazi"), shell);
 
         h.create_dir("/a/tmp");
         h.create_dir("/b/tmp");
