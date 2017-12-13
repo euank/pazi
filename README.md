@@ -18,8 +18,8 @@ user@host /usr/src/linux $
 # If multiple items match a query, they can be interactively chosen between with '-i':
 user@host /usr/src/linux $ cd ~/dev/linux
 user@host ~/dev/linux $ z -i linux
-2	0.9200000000000001	/usr/src/linux
-1	0.7200000000000002	/home/user/dev/linux
+2	0.7200000000000001	/usr/src/linux
+1	0.9200000000000002	/home/user/dev/linux
 > 1
 
 user@host ~/dev/linux
