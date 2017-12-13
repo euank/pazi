@@ -33,7 +33,7 @@ supported):
 
 ```sh
 if command -v pazi &>/dev/null; then
-  eval "$(pazi --init zsh)" # or 'bash'
+  eval "$(pazi init zsh)" # or 'bash'
 fi
 ```
 

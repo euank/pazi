@@ -14,6 +14,7 @@ extern crate serde_derive;
 extern crate termion;
 extern crate xdg;
 
+mod supported_shells;
 mod matcher;
 mod frecency;
 mod frecent_paths;
@@ -21,14 +22,15 @@ mod interactive;
 
 use std::process;
 
-use clap::{App, Arg, ArgGroup};
+use clap::{App, Arg, ArgGroup, SubCommand};
 use frecent_paths::PathFrecency;
+use supported_shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
 fn main() {
     let flags = App::new("pazi")
-        .about("An autojump tool for zsh")
+        .about("A fast autojump tool")
         .version(crate_version!())
         .author(crate_authors!())
         .arg(
@@ -37,17 +39,20 @@ fn main() {
                 .long("debug")
                 .env("PAZI_DEBUG"),
         )
-        .arg(
-            Arg::with_name("init")
-                .help("provide initialization hooks to eval in the given shell")
-                .takes_value(true)
-                .long("init"),
+        .subcommand(
+            SubCommand::with_name("init")
+                .about("Prints intialization logic for the given shell to eval")
+                .usage(format!("pazi init [ {} ]", SUPPORTED_SHELLS.join(" | ")).as_str())
+                .arg(Arg::with_name("shell").help(&format!(
+                    "the shell to print initialization code for: one of {}",
+                    SUPPORTED_SHELLS.join(", ")
+                ))),
         )
         .arg(
             Arg::with_name("dir")
                 .help(
                     "print a directory matching a pattern; should be used via the 'z' function \
-                     '--init' creates",
+                     'init' creates",
                 )
                 .long("dir")
                 .short("d"),
@@ -66,14 +71,15 @@ fn main() {
                 .value_name("directory"),
         )
         .arg(Arg::with_name("dir_target"))
-        .group(ArgGroup::with_name("operation").args(&["init", "dir", "add-dir"]))
+        .group(ArgGroup::with_name("operation").args(&["dir", "add-dir"]))
         .get_matches();
 
-    match flags.value_of("init") {
-        Some("zsh") => {
-            println!(
-                "{}",
-                r#"
+    if let Some(init_matches) = flags.subcommand_matches("init") {
+        match init_matches.value_of("shell") {
+            Some("zsh") => {
+                println!(
+                    "{}",
+                    r#"
 __pazi_add_dir() {
     pazi --add-dir "${PWD}"
 }
@@ -90,16 +96,16 @@ pazi_cd() {
 }
 alias z='pazi_cd'
 "#
-            );
-            std::process::exit(0);
-        }
-        Some("bash") => {
-            // ty to mklement0 for this suggested append method:
-            // https://stackoverflow.com/questions/3276247/is-there-a-hook-in-bash-to-find-out-when-the-cwd-changes#comment35222599_3276280
-            // Used under cc by-sa 3.0
-            println!(
-                "{}",
-                r#"
+                );
+                std::process::exit(0);
+            }
+            Some("bash") => {
+                // ty to mklement0 for this suggested append method:
+                // https://stackoverflow.com/questions/3276247/is-there-a-hook-in-bash-to-find-out-when-the-cwd-changes#comment35222599_3276280
+                // Used under cc by-sa 3.0
+                println!(
+                    "{}",
+                    r#"
 __pazi_add_dir() {
     # TODO: should pazi keep track of this itself in its datadir?
     if [[ "${__PAZI_LAST_PWD}" != "${PWD}" ]]; then
@@ -122,13 +128,17 @@ pazi_cd() {
 }
 alias z='pazi_cd'
 "#
-            );
-            std::process::exit(0);
-        }
-        None => {}
-        Some(s) => {
-            println!("{}\n\nUnsupported shell: {}", flags.usage(), s);
-            std::process::exit(1);
+                );
+                std::process::exit(0);
+            }
+            Some(s) => {
+                println!("{}\n\nUnsupported shell: {}", init_matches.usage(), s);
+                std::process::exit(1);
+            }
+            None => {
+                println!("{}\n\ninit requires an argument", init_matches.usage(),);
+                std::process::exit(1);
+            }
         }
     }
 
