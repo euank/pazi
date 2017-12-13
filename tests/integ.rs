@@ -4,6 +4,8 @@ mod testshell;
 mod integ_tests {
     extern crate pty;
     extern crate tempdir;
+    extern crate pazi;
+    use integ_tests::pazi::supported_shells::SUPPORTED_SHELLS;
     use super::testshell::TestShell;
     use self::tempdir::TempDir;
     use std::process::Command;
@@ -24,8 +26,10 @@ mod integ_tests {
 
     #[test]
     fn it_jumps() {
-        it_jumps_shell("zsh");
-        it_jumps_shell("bash");
+        for shell in SUPPORTED_SHELLS.iter() {
+            println!("testing: {}", shell);
+            it_jumps_shell(shell);
+        }
     }
 
     fn it_jumps_shell(shell: &str) {
@@ -38,9 +42,12 @@ mod integ_tests {
 
     #[test]
     fn it_jumps_to_more_frecent_items() {
-        it_jumps_to_more_frecent_items_shell("zsh");
-        it_jumps_to_more_frecent_items_shell("bash");
+        for shell in SUPPORTED_SHELLS.iter() {
+            println!("testing: {}", shell);
+            it_jumps_to_more_frecent_items_shell(shell);
+        }
     }
+
     fn it_jumps_to_more_frecent_items_shell(shell: &str) {
         let mut h = Harness::new(&pazi_bin().join("pazi"), shell);
 
