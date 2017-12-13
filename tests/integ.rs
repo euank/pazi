@@ -85,7 +85,7 @@ mod integ_tests {
 set -e
 export PS1="{2}" # sep so we know when our commands finished
 export PATH=$PATH:$(dirname "{0}")
-eval "$("{0}" --init {1})"
+eval "$("{0}" init {1})"
 "#,
                     pazi.to_str().unwrap(),
                     shell,
