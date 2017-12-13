@@ -1,6 +1,6 @@
-# :zap: Pazi :zap: &mdash; A fast autojump helper
+# :zap: pazi :zap: &mdash; A fast autojump helper
 
-## What is Pazi?
+## What is pazi?
 
 Pazi is an autojump utility. That is to say, pazi remembers visited directories in the past and makes it easier to get back to them.
 A typical use of pazi might look like the following:
