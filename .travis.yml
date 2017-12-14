@@ -19,4 +19,5 @@ env:
 
 script:
 - cargo build --verbose --examples
-- cargo test --features integ-tests -v
+- cargo build --release # for integ tests
+- cd tests && cargo test -v

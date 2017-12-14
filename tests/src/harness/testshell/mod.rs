@@ -11,8 +11,7 @@ use std::thread;
 
 pub struct TestShell {
     // fork is here for lifetime reasons; can't drop it until the pty is done
-    #[allow(unused)]
-    fork: pty::fork::Fork,
+    #[allow(unused)] fork: pty::fork::Fork,
     pty: pty::fork::Master,
     output: mpsc::Receiver<String>,
     eof: mpsc::Receiver<()>,
@@ -49,11 +48,12 @@ impl vte::Perform for VTEData {
             '\n' => {
                 self.scrollback.push(self.current_line.clone());
                 self.current_line = String::new();
-            },
+            }
             '\r' => {
                 self.current_line_cursor = 0;
             }
-            '\x08' => { // backspace
+            '\x08' => {
+                // backspace
                 if self.current_line_cursor > 0 {
                     self.current_line_cursor -= 1;
                     self.current_line.pop();
@@ -192,7 +192,7 @@ impl TestShell {
 
     pub fn run(&mut self, cmd: &str) -> String {
         self.pty.write(format!("{}\n", cmd).as_bytes()).unwrap();
-        self.output.recv_timeout(Duration::from_secs(1)).unwrap()
+        self.output.recv_timeout(Duration::from_secs(100)).unwrap()
     }
 
     pub fn shutdown(&mut self) {
