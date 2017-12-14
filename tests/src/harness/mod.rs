@@ -33,12 +33,13 @@ export PS1="{2}" # sep so we know when our commands finished
 export PATH=$PATH:$(dirname "{0}")
 eval "$("{0}" init {1})"
 "#,
-pazi.to_str().unwrap(),
-shell,
-ps1,
-).as_bytes(),
-).unwrap();
+                pazi.to_str().unwrap(),
+                shell,
+                ps1,
+            ).as_bytes(),
+        ).unwrap();
         let mut cmd = Command::new(shell);
+        cmd.env_clear();
         cmd.env("HOME", &home);
         let testshell = TestShell::new(cmd, ps1);
         Harness {
@@ -56,6 +57,23 @@ ps1,
         let p = Path::new(&self.root).join(Path::new(path).strip_prefix("/").unwrap());
         self.testshell
             .run(&format!("cd '{}'", p.to_string_lossy().to_string()));
+    }
+
+    pub fn visit_dirs(&mut self, paths: &Vec<String>) {
+        let cmd = paths
+            .iter()
+            .map(|el| {
+                format!(
+                    "cd '{}'",
+                    Path::new(&self.root)
+                        .join(Path::new(el).strip_prefix("/").unwrap())
+                        .to_string_lossy()
+                        .to_string()
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(" && ");
+        self.testshell.run(&cmd);
     }
 
     pub fn jump(&mut self, search: &str) -> String {

@@ -1,0 +1,11 @@
+[package]
+name = "pazi-internal"
+description = "internal tests and benchmarks for pazi"
+version = "0.1.0"
+authors = ["Euan Kemp <euank@euank.com>"]
+
+[dependencies]
+tempdir = "~0.3"
+pty = "~0.2"
+vte = "~0.3"
+pazi = { path = ".." }

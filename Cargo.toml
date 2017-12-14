@@ -21,12 +21,3 @@ log = "~0.3"
 termion = "~1"
 chan = "~0.1"
 chan-signal = "~0.3"
-
-tempdir = { version = "~0.3", optional = true }
-pty = { version = "~0.2", optional = true }
-vte = { version = "~0.3", optional = true }
-
-
-[features]
-default = [ ]
-integ-tests = [ "pty", "tempdir", "vte" ]
