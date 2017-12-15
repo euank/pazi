@@ -3,7 +3,7 @@ extern crate tempdir;
 
 use integ::pazi::supported_shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
-use harness::Harness;
+use harness::{Harness, Shell, Autojumper};
 use std::path::{Path, PathBuf};
 use std::env;
 use std::time::Duration;
@@ -27,13 +27,15 @@ fn pazi_bin() -> PathBuf {
 fn it_jumps() {
     for shell in SUPPORTED_SHELLS.iter() {
         println!("testing: {}", shell);
-        it_jumps_shell(shell);
+        let s = Shell::from_str(shell);
+        it_jumps_shell(&s);
     }
 }
 
-fn it_jumps_shell(shell: &str) {
-    let root = TempDir::new("pazi_integ").unwrap().into_path();
-    let mut h = Harness::new(&root, &pazi_bin(), shell);
+fn it_jumps_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Autojumper::Pazi, shell);
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
 
@@ -46,13 +48,15 @@ fn it_jumps_shell(shell: &str) {
 fn it_jumps_to_more_frecent_items() {
     for shell in SUPPORTED_SHELLS.iter() {
         println!("testing: {}", shell);
-        it_jumps_to_more_frecent_items_shell(shell);
+        let s = Shell::from_str(shell);
+        it_jumps_to_more_frecent_items_shell(&s);
     }
 }
 
-fn it_jumps_to_more_frecent_items_shell(shell: &str) {
-    let root = TempDir::new("pazi_integ").unwrap().into_path();
-    let mut h = Harness::new(&root, &pazi_bin(), shell);
+fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Autojumper::Pazi, shell);
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
     let a_dir = a_dir_path.to_string_lossy();
