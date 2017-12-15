@@ -8,6 +8,7 @@ use std::fs;
 
 pub use self::shells::Shell;
 pub use self::autojumpers::Autojumper;
+pub use self::autojumpers::pazi::Pazi;
 
 pub struct Harness {
     testshell: TestShell,

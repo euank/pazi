@@ -3,25 +3,9 @@ extern crate tempdir;
 
 use integ::pazi::supported_shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
-use harness::{Harness, Shell, Autojumper};
-use std::path::{Path, PathBuf};
-use std::env;
+use harness::{Harness, Shell, Pazi};
 use std::time::Duration;
 use std::thread::sleep;
-
-fn pazi_bin() -> PathBuf {
-    // target/.../deps/integ...
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
-    let pazi = Path::new(&crate_dir)
-        .join("../target/release/pazi")
-        .canonicalize()
-        .unwrap();
-    if !pazi.exists() {
-        panic!("compile pazi in release mode before running bench/integ tests");
-    }
-    println!("pazi path: {}", pazi.to_string_lossy());
-    pazi
-}
 
 #[test]
 fn it_jumps() {
@@ -35,7 +19,7 @@ fn it_jumps() {
 fn it_jumps_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Autojumper::Pazi, shell);
+    let mut h = Harness::new(&root, &Pazi, shell);
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
 
@@ -56,7 +40,7 @@ fn it_jumps_to_more_frecent_items() {
 fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Autojumper::Pazi, shell);
+    let mut h = Harness::new(&root, &Pazi, shell);
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
     let a_dir = a_dir_path.to_string_lossy();
