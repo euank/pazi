@@ -1,23 +1,19 @@
-extern crate tempdir;
-
 mod testshell;
 
-use std::path::{Path, PathBuf};
-use self::tempdir::TempDir;
+use std::path::Path;
 use self::testshell::TestShell;
 use std::process::Command;
 use std::io::Write;
 use std::fs;
+use std::env;
 
 pub struct Harness {
-    root: PathBuf,
     testshell: TestShell,
 }
 
 impl Harness {
-    pub fn new(pazi: &Path, shell: &str) -> Self {
+    pub fn new(root: &Path, pazi: &Path, shell: &str) -> Self {
         let ps1 = "==PAZI==> ";
-        let root = TempDir::new("pazi_integ").unwrap().into_path();
         let home = Path::new(&root).join("home/pazi");
         // We have to create the shellrc before spawning the shell. Since the shell is spawned
         // across a fork, mpsc channels won't work, so just create the rc before (even though
@@ -43,34 +39,22 @@ eval "$("{0}" init {1})"
         cmd.env("HOME", &home);
         let testshell = TestShell::new(cmd, ps1);
         Harness {
-            root: root,
             testshell: testshell,
         }
     }
 
     pub fn create_dir(&self, path: &str) {
-        let p = Path::new(&self.root).join(Path::new(path).strip_prefix("/").unwrap());
-        fs::create_dir_all(p).unwrap();
+        fs::create_dir_all(path).unwrap();
     }
 
     pub fn visit_dir(&mut self, path: &str) {
-        let p = Path::new(&self.root).join(Path::new(path).strip_prefix("/").unwrap());
-        self.testshell
-            .run(&format!("cd '{}'", p.to_string_lossy().to_string()));
+        self.testshell.run(&format!("cd '{}'", path));
     }
 
-    pub fn visit_dirs(&mut self, paths: &Vec<String>) {
+    pub fn visit_dirs(&mut self, paths: Vec<&str>) {
         let cmd = paths
             .iter()
-            .map(|el| {
-                format!(
-                    "cd '{}'",
-                    Path::new(&self.root)
-                        .join(Path::new(el).strip_prefix("/").unwrap())
-                        .to_string_lossy()
-                        .to_string()
-                )
-            })
+            .map(|el| format!("cd '{}'", el,))
             .collect::<Vec<_>>()
             .join(" && ");
         self.testshell.run(&cmd);
@@ -79,7 +63,6 @@ eval "$("{0}" init {1})"
     pub fn jump(&mut self, search: &str) -> String {
         self.testshell
             .run(&format!("z '{}' && pwd", search))
-            .trim_left_matches(self.root.to_str().unwrap())
             .to_string()
     }
 }
@@ -87,6 +70,5 @@ eval "$("{0}" init {1})"
 impl Drop for Harness {
     fn drop(&mut self) {
         self.testshell.shutdown();
-        fs::remove_dir_all(&self.root).unwrap();
     }
 }
