@@ -9,6 +9,8 @@ use std::fs;
 pub use self::shells::Shell;
 pub use self::autojumpers::Autojumper;
 pub use self::autojumpers::pazi::Pazi;
+pub use self::autojumpers::fasd::Fasd;
+pub use self::autojumpers::None as NoJumper;
 
 pub struct Harness {
     testshell: TestShell,
@@ -35,19 +37,14 @@ impl Harness {
         self.testshell.run(&format!("cd '{}'", path));
     }
 
-    pub fn visit_dirs(&mut self, paths: Vec<&str>) {
-        let cmd = paths
-            .iter()
-            .map(|el| format!("cd '{}'", el,))
-            .collect::<Vec<_>>()
-            .join(" && ");
-        self.testshell.run(&cmd);
-    }
-
     pub fn jump(&mut self, search: &str) -> String {
         self.testshell
             .run(&format!("z '{}' && pwd", search))
             .to_string()
+    }
+
+    pub fn run_cmd(&mut self, cmd: &str) -> String {
+        self.testshell.run(cmd)
     }
 }
 

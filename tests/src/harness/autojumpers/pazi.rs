@@ -15,7 +15,6 @@ impl Autojumper for Pazi {
         if !pazi.exists() {
             panic!("compile pazi in release mode before running bench/integ tests");
         }
-        println!("pazi path: {}", pazi.to_string_lossy());
         pazi.to_str().unwrap().to_string()
     }
 

@@ -1,4 +1,5 @@
 pub mod pazi;
+pub mod fasd;
 
 use harness::Shell;
 
