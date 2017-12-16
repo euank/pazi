@@ -36,7 +36,7 @@ impl Autojumper for Fasd {
     fn init_for(&self, shell: &Shell) -> String {
         match shell {
             &Shell::Bash | &Shell::Zsh => {
-                format!(r#"eval "$(fasd --init posix-alias {}-hook)""#, shell.name())
+                format!(r#"eval "$({} --init posix-alias {}-hook)""#, self.bin_path(), shell.name())
             }
             &Shell::Conch => unimplemented!(),
         }
