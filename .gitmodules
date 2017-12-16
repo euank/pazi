@@ -1,0 +1,3 @@
+[submodule "tests/testbins/fasd"]
+	path = tests/testbins/fasd
+	url = https://github.com/clvv/fasd.git
