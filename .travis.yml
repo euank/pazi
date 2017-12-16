@@ -20,4 +20,4 @@ env:
 script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
-- cd tests && cargo test -v
+- cd tests && cargo test -v --features="$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo nightly || echo default)"

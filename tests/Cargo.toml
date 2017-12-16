@@ -9,3 +9,7 @@ tempdir = "~0.3"
 pty = "~0.2"
 vte = "~0.3"
 pazi = { path = ".." }
+
+[features]
+default = []
+nightly = []
