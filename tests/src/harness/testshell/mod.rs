@@ -151,13 +151,11 @@ impl TestShell {
                     {
                         // Exactly equal to PS1 means that there's a new blank PS1 prompt
                         // Either we just started up, or a command just finished.
-                        if last_prompt_scrollback_count != -1 {
-                            // not startup, sometihng finished
-                            write_command_out
-                                .send(current_command_output.join("\n"))
-                                .unwrap();
-                            current_command_output = Vec::new();
-                        }
+                        // not startup, sometihng finished
+                        write_command_out
+                            .send(current_command_output.join("\n"))
+                            .unwrap();
+                        current_command_output = Vec::new();
                         // mark that we've seen this prompt, don't handle it again even if there's
                         // backspacing
                         last_prompt_scrollback_count = data.scrollback.len() as i32;
@@ -181,6 +179,9 @@ impl TestShell {
                 }
             }
         });
+
+
+        command_out.recv_timeout(Duration::from_secs(1)).expect("did not get initial prompt");
 
         TestShell {
             fork: fork,
