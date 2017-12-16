@@ -19,8 +19,18 @@ impl Autojumper for Fasd {
 
     fn init_for(&self, shell: &Shell) -> String {
         match shell {
-            &Shell::Bash | &Shell::Zsh => {
-                format!(r#"eval "$({} --init posix-alias {}-hook)""#, self.bin_path(), shell.name())
+            &Shell::Bash => {
+                format!(r#"
+# Ensure history is not blank; fasd grabs commands to process from history
+# (https://github.com/clvv/fasd/blob/90b531a5daaa545c74c7d98974b54cbdb92659fc/fasd#L127-L130)
+# and, if history is empty, will error out
+echo "echo hello world" >> ~/.bash_history
+
+eval "$({} --init posix-alias bash-hook)"
+"#, self.bin_path())
+            }
+            &Shell::Zsh => {
+                format!(r#"eval "$({} --init posix-alias zsh-hook)""#, self.bin_path())
             }
             &Shell::Conch => unimplemented!(),
         }
