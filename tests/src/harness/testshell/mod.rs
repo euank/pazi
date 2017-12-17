@@ -181,7 +181,7 @@ impl TestShell {
         });
 
 
-        command_out.recv_timeout(Duration::from_secs(1)).expect("did not get initial prompt");
+        command_out.recv_timeout(Duration::from_secs(5)).expect("did not get initial prompt");
 
         TestShell {
             fork: fork,

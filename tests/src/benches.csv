@@ -1,0 +1,10 @@
+# This is a CSV file (with # comment support too, sue me)
+# This file describes what benchmarks to generate.
+# The columns are:
+# 1. The name of the benchmark function to run
+# 2. A space-separated list of "Autojumper"s, 'j'
+# 3. A space-separated list of shells, 's'
+# 
+# The generated benchmarks will test all combinations j * s for that function.
+cd_bench, NoJumper Pazi Fasd, Zsh Bash
+cd_50_bench, NoJumper Pazi Fasd, Zsh Bash
