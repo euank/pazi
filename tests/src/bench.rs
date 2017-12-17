@@ -46,6 +46,28 @@ fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     });
 }
 
+fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_bench").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, jumper, shell);
+    let dirp = root.join("tmp_target");
+    let dir = dirp.to_str().unwrap();
+
+    // Add about 1000 items to the db
+    for i in 1..1000 {
+        let dirn = root.join(format!("tmp{}", i));
+        h.create_dir(&dirn.to_string_lossy());
+        h.visit_dir(&dirn.to_string_lossy());
+    }
+
+    h.create_dir(&dir);
+    h.visit_dir(&dir);
+
+    b.iter(move || {
+        assert_eq!(&h.jump("tmp_target"), &dir);
+    });
+}
+
 
 fn cd_50_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
