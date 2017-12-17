@@ -52,65 +52,6 @@ fn cd_50_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     });
 }
 
-
-#[bench]
-fn it_cds_to_50_directories_none_zsh(b: &mut Bencher) {
-    cd_50_bench(b, &NoJumper, &Shell::Zsh);
-}
-
-#[bench]
-fn it_cds_to_50_directories_none_bash(b: &mut Bencher) {
-    cd_50_bench(b, &NoJumper, &Shell::Bash);
-}
-
-#[bench]
-fn it_cds_to_50_directories_pazi_zsh(b: &mut Bencher) {
-    cd_50_bench(b, &Pazi, &Shell::Zsh);
-}
-
-#[bench]
-fn it_cds_to_50_directories_pazi_bash(b: &mut Bencher) {
-    cd_50_bench(b, &Pazi, &Shell::Bash);
-}
-
-
-#[bench]
-fn it_cds_to_50_directories_fasd_zsh(b: &mut Bencher) {
-    cd_50_bench(b, &Fasd, &Shell::Zsh);
-}
-
-#[bench]
-fn it_cds_to_50_directories_fasd_bash(b: &mut Bencher) {
-    cd_50_bench(b, &Fasd, &Shell::Bash);
-}
-
-#[bench]
-fn it_cds_to_2_directories_none_zsh(b: &mut Bencher) {
-    cd_bench(b, &NoJumper, &Shell::Zsh);
-}
-
-#[bench]
-fn it_cds_to_2_directories_none_bash(b: &mut Bencher) {
-    cd_bench(b, &NoJumper, &Shell::Bash);
-}
-
-#[bench]
-fn it_cds_to_2_directories_pazi_zsh(b: &mut Bencher) {
-    cd_bench(b, &Pazi, &Shell::Zsh);
-}
-
-#[bench]
-fn it_cds_to_2_directories_pazi_bash(b: &mut Bencher) {
-    cd_bench(b, &Pazi, &Shell::Bash);
-}
-
-
-#[bench]
-fn it_cds_to_2_directories_fasd_zsh(b: &mut Bencher) {
-    cd_bench(b, &Fasd, &Shell::Zsh);
-}
-
-#[bench]
-fn it_cds_to_2_directories_fasd_bash(b: &mut Bencher) {
-    cd_bench(b, &Fasd, &Shell::Bash);
-}
+// This file is generated with 'build.rs' based on the contents of 'src/benches.csv'; to change the
+// contents of it, edit those files.
+include!("./benches_generated.rs");

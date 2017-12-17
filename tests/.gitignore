@@ -1,2 +1,3 @@
 /target/
 /.cache
+/src/benches_generated.rs
