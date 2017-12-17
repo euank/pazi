@@ -8,3 +8,4 @@
 # The generated benchmarks will test all combinations j * s for that function.
 cd_bench, NoJumper Pazi Fasd, Zsh Bash
 cd_50_bench, NoJumper Pazi Fasd, Zsh Bash
+jump_bench, Pazi Fasd, Zsh Bash

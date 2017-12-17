@@ -40,7 +40,6 @@ impl Harness {
     pub fn jump(&mut self, search: &str) -> String {
         self.testshell
             .run(&format!("z '{}' && pwd", search))
-            .to_string()
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {

@@ -31,6 +31,21 @@ fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     });
 }
 
+fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_bench").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, jumper, shell);
+    let dir1p = root.join("tmp1");
+    let dir1 = dir1p.to_str().unwrap();
+
+    h.create_dir(&dir1);
+    h.visit_dir(&dir1);
+
+    b.iter(move || {
+        assert_eq!(&h.jump("tmp1"), dir1);
+    });
+}
+
 
 fn cd_50_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
