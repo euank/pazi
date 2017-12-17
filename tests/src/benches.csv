@@ -9,3 +9,4 @@
 cd_bench, NoJumper Pazi Fasd, Zsh Bash
 cd_50_bench, NoJumper Pazi Fasd, Zsh Bash
 jump_bench, Pazi Fasd, Zsh Bash
+jump_large_db_bench, Pazi Fasd, Zsh Bash
