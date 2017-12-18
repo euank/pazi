@@ -3,9 +3,10 @@ extern crate tempdir;
 
 use integ::pazi::supported_shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
-use harness::{Harness, Shell, Pazi};
+use harness::{Harness, Shell, Pazi, Fasd};
 use std::time::Duration;
 use std::thread::sleep;
+use std;
 
 #[test]
 fn it_jumps() {
@@ -63,4 +64,33 @@ fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     }
     h.visit_dir(&b_dir);
     assert_eq!(h.jump("tmp"), a_dir);
+}
+
+#[test]
+fn it_imports_from_fasd() {
+    for shell in SUPPORTED_SHELLS.iter() {
+        println!("testing: {}", shell);
+        let s = Shell::from_str(shell);
+        it_imports_from_fasd_shell(&s);
+    }
+}
+
+fn it_imports_from_fasd_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+
+    {
+        let mut fasd = Harness::new(&root, &Fasd, shell);
+        fasd.create_dir(&root.join("tmp").to_string_lossy());
+        // visit twice because fasd uses 'history 1' to do stuff in bash... which means yeah, it's
+        // 1-command-delayed
+        fasd.visit_dir(&root.join("tmp").to_string_lossy());
+        fasd.visit_dir(&root.join("tmp").to_string_lossy());
+    }
+
+    {
+        let mut h = Harness::new(&root, &Pazi, shell);
+        assert_eq!(h.run_cmd("pazi import fasd").trim(), "imported 1 items from fasd (out of 1 in its db)");
+        assert_eq!(h.jump("tmp"), root.join("tmp").to_string_lossy());
+    }
 }
