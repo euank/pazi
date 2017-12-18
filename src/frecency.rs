@@ -77,6 +77,7 @@ where
         };
 
         if let Some(min) = min_key {
+            debug!("trimming: {:?}", min);
             self.frecency.remove(&min);
         }
     }

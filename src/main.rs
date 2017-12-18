@@ -14,6 +14,7 @@ extern crate serde_derive;
 extern crate termion;
 extern crate xdg;
 
+mod importers;
 mod supported_shells;
 mod matcher;
 mod frecency;
@@ -46,6 +47,14 @@ fn main() {
                 .arg(Arg::with_name("shell").help(&format!(
                     "the shell to print initialization code for: one of {}",
                     SUPPORTED_SHELLS.join(", ")
+                ))),
+        )
+        .subcommand(
+            SubCommand::with_name("import")
+                .about("Import from another autojump program")
+                .usage("pazi import fasd")
+                .arg(Arg::with_name("autojumper").help(&format!(
+                    "the other autojump program to import from, only fasd is currently supported",
                 ))),
         )
         .arg(
@@ -136,7 +145,7 @@ alias z='pazi_cd'
                 std::process::exit(1);
             }
             None => {
-                println!("{}\n\ninit requires an argument", init_matches.usage(),);
+                println!("{}\n\ninit requires an argument", init_matches.usage());
                 std::process::exit(1);
             }
         }
@@ -157,6 +166,39 @@ alias z='pazi_cd'
         .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
 
     let mut frecency = PathFrecency::load(&frecency_path);
+
+    if let Some(import_matches) = flags.subcommand_matches("import") {
+        match import_matches.value_of("autojumper") {
+            Some("fasd") => {
+                match importers::Fasd::import(&mut frecency) {
+                    Ok(stats) => {
+                        match frecency.save_to_disk() {
+                            Ok(_) => {
+                                println!("imported {} items from fasd (out of {} in its db)", stats.items_visited, stats.items_considered);
+                                process::exit(0);
+                            }
+                            Err(e) => {
+                                println!("pazi: error adding directory: {}", e);
+                                process::exit(1);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("error importing from fasd: {}", e);
+                        process::exit(1);
+                    }
+                }
+            }
+            Some(s) => {
+                println!("{}\n\nUnsupported import target: {}", import_matches.usage(), s);
+                std::process::exit(1);
+            }
+            None => {
+                println!("{}\n\nimport requires an argument", import_matches.usage());
+                std::process::exit(1);
+            }
+        }
+    }
 
     if let Some(dir) = flags.value_of("add-dir") {
         frecency.visit(dir.to_string());
