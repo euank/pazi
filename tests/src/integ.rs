@@ -96,6 +96,33 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
 }
 
 #[test]
+fn it_ignores_dead_dirs_on_cd() {
+    for shell in SUPPORTED_SHELLS.iter() {
+        println!("testing: {}", shell);
+        let s = Shell::from_str(shell);
+        it_ignores_dead_dirs_on_cd_shell(&s);
+    }
+}
+
+fn it_ignores_dead_dirs_on_cd_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Pazi, shell);
+
+    h.create_dir(&root.join("1/tmp").to_string_lossy());
+    h.create_dir(&root.join("2/tmp").to_string_lossy());
+
+    h.visit_dir(&root.join("1/tmp").to_string_lossy());
+    h.visit_dir(&root.join("2/tmp").to_string_lossy());
+    h.visit_dir(&root.join("2/tmp").to_string_lossy());
+    h.visit_dir(&root.join("2/tmp").to_string_lossy());
+
+    assert_eq!(h.jump("tmp"), root.join("2/tmp").to_string_lossy());
+    h.delete_dir(&root.join("2/tmp").to_string_lossy());
+    assert_eq!(h.jump("tmp"), root.join("1/tmp").to_string_lossy());
+}
+
+#[test]
 fn it_prints_list_on_lonely_z() {
     // running just 'z' or just 'pazi' should print a directory listing, not error
     for shell in SUPPORTED_SHELLS.iter() {

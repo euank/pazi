@@ -13,6 +13,8 @@ use matcher::*;
 
 pub struct PathFrecency {
     frecency: Frecency<String>,
+    // whether the frecency file is 'dirty' and should be updated on save
+    dirty: bool,
     path: PathBuf,
 }
 
@@ -38,14 +40,20 @@ impl PathFrecency {
         PathFrecency {
             frecency: frecency,
             path: path.to_path_buf(),
+            dirty: false,
         }
     }
 
     pub fn visit(&mut self, dir: String) {
         self.frecency.visit(dir);
+        self.dirty = true
     }
 
     pub fn save_to_disk(&self) -> Result<(), String> {
+        if !self.dirty {
+            // No need to save, nothing's changed
+            return Ok(());
+        }
         // Transform frecency path into a temporary path for atomic move
         let my_pid = unsafe { libc::getpid() };
         if my_pid == 0 {
@@ -72,7 +80,17 @@ impl PathFrecency {
             .map_err(|e| format!("could not atomically rename: {}", e).to_string())
     }
 
-    pub fn items_with_frecency(&self) -> Vec<(&String, f64)> {
+    pub fn items_with_frecency(&mut self) -> Vec<(&String, f64)> {
+        if self.frecency.retain(|path| {
+            if Path::new(path).is_dir() {
+                true
+            } else {
+                debug!("trimming nonexistent dir: {}", path);
+                false
+            }
+        }) {
+            self.dirty = true;
+        }
         let mut items = self.frecency.normalized_frecency();
         items.sort_by(|lhs, rhs| {
             // NaN shouldn't happen
@@ -84,7 +102,7 @@ impl PathFrecency {
         items
     }
 
-    pub fn directory_matches(&self, filter: &str) -> Vec<(&String, f64)> {
+    pub fn directory_matches(&mut self, filter: &str) -> Vec<(&String, f64)> {
         // 'best directory' is a tricky concept, as is 'match.
         //
         // There's a continuum from "exact string match" to "no characters in common", and we

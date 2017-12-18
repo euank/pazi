@@ -33,6 +33,10 @@ impl Harness {
         fs::create_dir_all(path).unwrap();
     }
 
+    pub fn delete_dir(&self, path: &str) {
+        fs::remove_dir_all(path).unwrap();
+    }
+
     pub fn visit_dir(&mut self, path: &str) {
         self.testshell.run(&format!("cd '{}'", path));
     }
