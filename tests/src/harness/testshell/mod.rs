@@ -59,6 +59,9 @@ impl vte::Perform for VTEData {
                     self.current_line.pop();
                 }
             }
+            '\t' => {
+                self.print('\t');
+            }
             _ => {
                 println!("[VTEData execute]: ignoring {}", byte);
             }

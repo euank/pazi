@@ -94,3 +94,29 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
         assert_eq!(h.jump("tmp"), root.join("tmp").to_string_lossy());
     }
 }
+
+#[test]
+fn it_prints_list_on_lonely_z() {
+    // running just 'z' or just 'pazi' should print a directory listing, not error
+    for shell in SUPPORTED_SHELLS.iter() {
+        let s = Shell::from_str(shell);
+        it_prints_list_on_lonely_z_shell(&s);
+    }
+}
+
+fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Pazi, shell);
+
+    h.create_dir(&root.join("1/tmp").to_string_lossy());
+    h.create_dir(&root.join("2/tmp").to_string_lossy());
+    h.visit_dir(&root.join("1/tmp").to_string_lossy());
+    h.visit_dir(&root.join("2/tmp").to_string_lossy());
+
+    let z_res = h.run_cmd("z");
+    let pazi_res = h.run_cmd("pazi");
+
+    assert_eq!(z_res, pazi_res);
+    assert!(z_res.contains(&root.join("1/tmp").to_string_lossy().to_string()));
+}

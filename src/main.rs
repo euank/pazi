@@ -97,9 +97,11 @@ autoload -Uz add-zsh-hook
 add-zsh-hook chpwd __pazi_add_dir
 
 pazi_cd() {
-    [ "$#" -eq 0 ] && pazi && return 0
+    if [ "$#" -eq 0 ]; then pazi; return $?; fi
     [[ "$@[(r)--help]" == "--help" ]] && pazi --help && return 0
     local to="$(pazi --dir "$@")"
+    local ret=$?
+    if [ "${ret}" != "0" ]; then return "$ret"; fi
     [ -z "${to}" ] && return 1
     cd "${to}"
 }
@@ -130,8 +132,10 @@ else
 fi
 
 pazi_cd() {
-    [ "$#" -eq 0 ] && pazi && return 0
+    if [ "$#" -eq 0 ]; then pazi; return $?; fi
     local to="$(pazi --dir "$@")"
+    local ret=$?
+    if [ "${ret}" != "0" ]; then return "$ret"; fi
     [ -z "${to}" ] && return 1
     cd "${to}"
 }
