@@ -79,6 +79,14 @@ fn main() {
                 .takes_value(true)
                 .value_name("directory"),
         )
+        // Note: dir_target is a positional argument since it is desirable that both of the
+        // following work:
+        //
+        // $ z -i asdf
+        // $ z asdf -i
+        // 
+        // A positional argument was the only way I could figure out to do that without writing
+        // more shell in init.
         .arg(Arg::with_name("dir_target"))
         .group(ArgGroup::with_name("operation").args(&["dir", "add-dir"]))
         .get_matches();
