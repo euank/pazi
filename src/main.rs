@@ -241,7 +241,8 @@ alias z='pazi_cd'
             // unwrap is safe because of the 'matches.len() == 0' check above.
             print!("{}", matches.last().unwrap().0);
         }
-    } else if flags.args.len() > 0 {
+    } else if flags.value_of("dir_target") != None {
+        // Something got interpreted as 'dir_target' even though this wasn't in '--dir'
         println!("pazi: could not parse given flags.\n\n{}", flags.usage());
         process::exit(1);
     } else {
