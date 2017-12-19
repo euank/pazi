@@ -5,7 +5,6 @@ branches:
   - dev
 rust:
   - stable
-  - beta
   - nightly
 
 addons:

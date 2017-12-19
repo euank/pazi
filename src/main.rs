@@ -79,6 +79,14 @@ fn main() {
                 .takes_value(true)
                 .value_name("directory"),
         )
+        // Note: dir_target is a positional argument since it is desirable that both of the
+        // following work:
+        //
+        // $ z -i asdf
+        // $ z asdf -i
+        // 
+        // A positional argument was the only way I could figure out to do that without writing
+        // more shell in init.
         .arg(Arg::with_name("dir_target"))
         .group(ArgGroup::with_name("operation").args(&["dir", "add-dir"]))
         .get_matches();
@@ -188,7 +196,7 @@ alias z='pazi_cd'
                         }
                     }
                     Err(e) => {
-                        println!("error importing from fasd: {}", e);
+                        println!("pazi: error importing from fasd: {}", e);
                         process::exit(1);
                     }
                 }
@@ -216,9 +224,7 @@ alias z='pazi_cd'
                 process::exit(1);
             }
         }
-    };
-
-    if flags.is_present("dir") {
+    } else if flags.is_present("dir") {
         // Safe to unwrap because 'dir' requires 'dir_target'
         let matches = match flags.value_of("dir_target") {
             Some(to) => frecency.directory_matches(to),
@@ -233,7 +239,6 @@ alias z='pazi_cd'
             match interactive::filter(matches, std::io::stdin(), stdout) {
                 Ok(el) => {
                     print!("{}", el);
-                    process::exit(0);
                 }
                 Err(e) => {
                     println!("{}", e);
@@ -243,12 +248,20 @@ alias z='pazi_cd'
         } else {
             // unwrap is safe because of the 'matches.len() == 0' check above.
             print!("{}", matches.last().unwrap().0);
-            process::exit(0);
         }
-    };
-
-    // By default print the frecency
-    for el in frecency.items_with_frecency() {
-        println!("{:.4}\t{}", el.1 * 100f64, el.0);
+    } else if flags.value_of("dir_target") != None {
+        // Something got interpreted as 'dir_target' even though this wasn't in '--dir'
+        println!("pazi: could not parse given flags.\n\n{}", flags.usage());
+        process::exit(1);
+    } else {
+        // By default print the frecency
+        for el in frecency.items_with_frecency() {
+            println!("{:.4}\t{}", el.1 * 100f64, el.0);
+        }
+    }
+    if let Err(e) = frecency.save_to_disk() {
+        // leading newline in case it was after a 'print' above
+        println!("\npazi: error saving db changes: {}", e);
+        process::exit(1);
     }
 }

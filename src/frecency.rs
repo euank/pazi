@@ -98,6 +98,21 @@ where
         v
     }
 
+    pub fn retain<F>(&mut self, mut pred: F) -> bool
+        where F: FnMut(&T) -> bool,
+    {
+        let mut any_removed = false;
+        self.frecency.retain(|k, _| {
+            if pred(k) {
+                true
+            } else {
+                any_removed = true;
+                false
+            }
+        });
+        any_removed
+    }
+
     pub fn normalized_frecency(&self) -> Vec<(&T, f64)> {
         let items = self.items_with_frecency();
         if items.len() == 0 {
