@@ -3,10 +3,9 @@ extern crate tempdir;
 
 use integ::pazi::supported_shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
-use harness::{Harness, Shell, Pazi, Fasd};
+use harness::{Fasd, Harness, Pazi, Shell};
 use std::time::Duration;
 use std::thread::sleep;
-use std;
 
 #[test]
 fn it_jumps() {
@@ -90,7 +89,10 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
 
     {
         let mut h = Harness::new(&root, &Pazi, shell);
-        assert_eq!(h.run_cmd("pazi import fasd").trim(), "imported 1 items from fasd (out of 1 in its db)");
+        assert_eq!(
+            h.run_cmd("pazi import fasd").trim(),
+            "imported 1 items from fasd (out of 1 in its db)"
+        );
         assert_eq!(h.jump("tmp"), root.join("tmp").to_string_lossy());
     }
 }

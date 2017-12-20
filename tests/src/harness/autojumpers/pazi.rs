@@ -20,9 +20,7 @@ impl Autojumper for Pazi {
 
     fn init_for(&self, shell: &Shell) -> String {
         match shell {
-            &Shell::Bash | &Shell::Zsh => {
-                format!(r#"eval "$(pazi init {})""#, shell.name())
-            }
+            &Shell::Bash | &Shell::Zsh => format!(r#"eval "$(pazi init {})""#, shell.name()),
             &Shell::Conch => unimplemented!(),
         }
     }

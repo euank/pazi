@@ -19,10 +19,9 @@ pub struct Harness {
 impl Harness {
     pub fn new(root: &Path, jumper: &Autojumper, shell: &Shell) -> Self {
         let ps1 = "==PAZI==> ";
-        let home = Path::new(&root).join("home/pazi");
         shell.setup(&root, jumper, ps1);
 
-        let mut cmd = shell.command(&root);
+        let cmd = shell.command(&root);
         let testshell = TestShell::new(cmd, ps1);
         Harness {
             testshell: testshell,
@@ -42,8 +41,7 @@ impl Harness {
     }
 
     pub fn jump(&mut self, search: &str) -> String {
-        self.testshell
-            .run(&format!("z '{}' && pwd", search))
+        self.testshell.run(&format!("z '{}' && pwd", search))
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {

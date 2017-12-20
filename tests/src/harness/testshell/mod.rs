@@ -19,11 +19,19 @@ pub struct TestShell {
 
 // VTEData is to handle lines after the mess of vte terminal stuff.
 // It keeps track of newlines and such
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Debug)]
 struct VTEData {
     current_line_cursor: usize,
     pub current_line: String,
     pub scrollback: Vec<String>,
+}
+
+// VTEDataLen is used as a sorta cheap hash for comparing whether VTEData has changed in a
+// meaningful way.
+#[derive(PartialEq, Clone, Debug)]
+struct VTEDataLen {
+    pub current_line: usize,
+    pub scrollback: usize,
 }
 
 impl VTEData {
@@ -32,6 +40,13 @@ impl VTEData {
             current_line_cursor: 0,
             current_line: String::new(),
             scrollback: Vec::new(),
+        }
+    }
+
+    fn len(&self) -> VTEDataLen {
+        VTEDataLen {
+            current_line: self.current_line.len(),
+            scrollback: self.scrollback.len(),
         }
     }
 }
@@ -47,7 +62,7 @@ impl vte::Perform for VTEData {
         match byte as char {
             '\n' => {
                 self.scrollback.push(self.current_line.clone());
-                self.current_line = String::new();
+                self.current_line.truncate(0);
             }
             '\r' => {
                 self.current_line_cursor = 0;
@@ -126,9 +141,9 @@ impl TestShell {
             // vte stuff
             let mut data = VTEData::new();
             let mut statemachine = vte::Parser::new();
-            // Keep a copy of the vte so we know when things have changed vs, e.g., a character
-            // just being a control sequence.
-            let mut last_data = data.clone();
+            // Keep a record of the last vte-length info we saw so we can detect meaningful
+            // changes.
+            let mut last_len = data.len();
 
             // Have we seen the starting PS1 yet?
             let mut last_prompt_scrollback_count = -1;
@@ -144,7 +159,7 @@ impl TestShell {
                 }
                 for byte in &buf[..nread] {
                     statemachine.advance(&mut data, *byte);
-                    if last_data == data {
+                    if last_len == data.len() {
                         // control character or whatever, we don't care
                         continue;
                     }
@@ -158,11 +173,11 @@ impl TestShell {
                         write_command_out
                             .send(current_command_output.join("\n"))
                             .unwrap();
-                        current_command_output = Vec::new();
+                        current_command_output.truncate(0);
                         // mark that we've seen this prompt, don't handle it again even if there's
                         // backspacing
                         last_prompt_scrollback_count = data.scrollback.len() as i32;
-                    } else if data.scrollback.len() > last_data.scrollback.len()
+                    } else if data.scrollback.len() > last_len.scrollback
                         && last_prompt_scrollback_count != -1
                     {
                         // this only happens if the last character was a newline since we're
@@ -178,13 +193,14 @@ impl TestShell {
                             current_command_output.push(last_line.to_string());
                         }
                     }
-                    last_data = data.clone();
+                    last_len = data.len();
                 }
             }
         });
 
-
-        command_out.recv_timeout(Duration::from_secs(5)).expect("did not get initial prompt");
+        command_out
+            .recv_timeout(Duration::from_secs(5))
+            .expect("did not get initial prompt");
 
         TestShell {
             fork: fork,
