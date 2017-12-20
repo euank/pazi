@@ -99,7 +99,8 @@ where
     }
 
     pub fn retain<F>(&mut self, mut pred: F) -> bool
-        where F: FnMut(&T) -> bool,
+    where
+        F: FnMut(&T) -> bool,
     {
         let mut any_removed = false;
         self.frecency.retain(|k, _| {

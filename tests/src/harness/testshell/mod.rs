@@ -44,7 +44,7 @@ impl VTEData {
     }
 
     fn len(&self) -> VTEDataLen {
-        VTEDataLen{
+        VTEDataLen {
             current_line: self.current_line.len(),
             scrollback: self.scrollback.len(),
         }
@@ -198,8 +198,9 @@ impl TestShell {
             }
         });
 
-
-        command_out.recv_timeout(Duration::from_secs(5)).expect("did not get initial prompt");
+        command_out
+            .recv_timeout(Duration::from_secs(5))
+            .expect("did not get initial prompt");
 
         TestShell {
             fork: fork,

@@ -1,6 +1,6 @@
 use std::env;
 use frecent_paths::PathFrecency;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::fs;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -18,15 +18,16 @@ impl Fasd {
             // For proper compatibility, this should use 'shellexpand' or a similar crate.
             Ok(dir) => PathBuf::from(dir),
             Err(_) => {
-                let home = env::home_dir()
-                    .ok_or_else(|| "could not get home directory".to_string())?;
+                let home =
+                    env::home_dir().ok_or_else(|| "could not get home directory".to_string())?;
                 home.join(".fasd")
             }
         };
 
-        let f = fs::File::open(&fasd_data).map_err(|e| format!("could not open {:?} for import: {}", &fasd_data, e))?;
+        let f = fs::File::open(&fasd_data)
+            .map_err(|e| format!("could not open {:?} for import: {}", &fasd_data, e))?;
 
-        let mut stats = ImportStats{
+        let mut stats = ImportStats {
             items_visited: 0,
             items_considered: 0,
         };

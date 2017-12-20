@@ -181,28 +181,31 @@ alias z='pazi_cd'
 
     if let Some(import_matches) = flags.subcommand_matches("import") {
         match import_matches.value_of("autojumper") {
-            Some("fasd") => {
-                match importers::Fasd::import(&mut frecency) {
-                    Ok(stats) => {
-                        match frecency.save_to_disk() {
-                            Ok(_) => {
-                                println!("imported {} items from fasd (out of {} in its db)", stats.items_visited, stats.items_considered);
-                                process::exit(0);
-                            }
-                            Err(e) => {
-                                println!("pazi: error adding directory: {}", e);
-                                process::exit(1);
-                            }
-                        }
+            Some("fasd") => match importers::Fasd::import(&mut frecency) {
+                Ok(stats) => match frecency.save_to_disk() {
+                    Ok(_) => {
+                        println!(
+                            "imported {} items from fasd (out of {} in its db)",
+                            stats.items_visited, stats.items_considered
+                        );
+                        process::exit(0);
                     }
                     Err(e) => {
-                        println!("pazi: error importing from fasd: {}", e);
+                        println!("pazi: error adding directory: {}", e);
                         process::exit(1);
                     }
+                },
+                Err(e) => {
+                    println!("pazi: error importing from fasd: {}", e);
+                    process::exit(1);
                 }
-            }
+            },
             Some(s) => {
-                println!("{}\n\nUnsupported import target: {}", import_matches.usage(), s);
+                println!(
+                    "{}\n\nUnsupported import target: {}",
+                    import_matches.usage(),
+                    s
+                );
                 std::process::exit(1);
             }
             None => {
