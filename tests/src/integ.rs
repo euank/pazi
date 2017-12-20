@@ -6,7 +6,6 @@ use tempdir::TempDir;
 use harness::{Harness, Shell, Pazi, Fasd};
 use std::time::Duration;
 use std::thread::sleep;
-use std;
 
 #[test]
 fn it_jumps() {

@@ -20,6 +20,7 @@ fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     // ensure we hit different directories on adjacent iterations; autojumpers may validly avoid
     // doing work on 'cd .'.
     let mut iter = 0;
+
     b.iter(move || {
         let dir = if iter % 2 == 0 {
             &dir1

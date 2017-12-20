@@ -7,6 +7,7 @@ use std::process::Command;
 pub enum Shell {
     Bash,
     Zsh,
+    #[allow(dead_code)]
     Conch,
 }
 
