@@ -45,7 +45,7 @@ This implementation aims to be faster than any of the others (in no small part d
 
 ### So, is it faster?
 
-Benchmarks are coming soon! I'm pretty confident pazi will win, but until it has I can't actually claim it's faster... Soon though.
+Pazi is faster than the other autojump implementations it has been benchmarked against by a large margin. The results of these benchmarks are documented [here](docs/Benchmarks.md).
 
 ## Status
 
