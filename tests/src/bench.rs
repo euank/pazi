@@ -12,7 +12,7 @@ fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     let dir1p = root.join("tmp1");
     let dir2p = root.join("tmp2");
     let dir1 = dir1p.to_str().unwrap();
-    let dir2 = dir1p.to_str().unwrap();
+    let dir2 = dir2p.to_str().unwrap();
 
     h.create_dir(&dir1);
     h.create_dir(&dir2);
