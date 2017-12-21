@@ -29,6 +29,29 @@ fn it_jumps_shell(shell: &Shell) {
 }
 
 #[test]
+fn it_jumps_to_exact_directory() {
+    for shell in SUPPORTED_SHELLS.iter() {
+        println!("testing: {}", shell);
+        let s = Shell::from_str(shell);
+        it_jumps_to_exact_directory_shell(&s);
+    }
+}
+
+fn it_jumps_to_exact_directory_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Pazi, shell);
+    let slash_tmp_path = root.join("tmp");
+    let slash_tmp = slash_tmp_path.to_string_lossy();
+    let unvisited_dir_path = slash_tmp_path.join("asdf");
+    let unvisited_dir = unvisited_dir_path.to_string_lossy();
+
+    h.create_dir(&unvisited_dir);
+    h.visit_dir(&slash_tmp);
+    assert_eq!(h.jump("asdf"), unvisited_dir);
+}
+
+#[test]
 fn it_jumps_to_more_frecent_items() {
     for shell in SUPPORTED_SHELLS.iter() {
         println!("testing: {}", shell);
