@@ -14,8 +14,8 @@ extern crate serde_derive;
 extern crate termion;
 extern crate xdg;
 
+mod shells;
 mod importers;
-mod supported_shells;
 mod matcher;
 mod frecency;
 mod frecent_paths;
@@ -25,7 +25,7 @@ use std::process;
 
 use clap::{App, Arg, ArgGroup, SubCommand};
 use frecent_paths::PathFrecency;
-use supported_shells::SUPPORTED_SHELLS;
+use shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
@@ -93,69 +93,16 @@ fn main() {
 
     if let Some(init_matches) = flags.subcommand_matches("init") {
         match init_matches.value_of("shell") {
-            Some("zsh") => {
-                println!(
-                    "{}",
-                    r#"
-__pazi_add_dir() {
-    pazi --add-dir "${PWD}"
-}
-
-autoload -Uz add-zsh-hook
-add-zsh-hook chpwd __pazi_add_dir
-
-pazi_cd() {
-    if [ "$#" -eq 0 ]; then pazi; return $?; fi
-    [[ "$@[(r)--help]" == "--help" ]] && pazi --help && return 0
-    local to="$(pazi --dir "$@")"
-    local ret=$?
-    if [ "${ret}" != "0" ]; then return "$ret"; fi
-    [ -z "${to}" ] && return 1
-    cd "${to}"
-}
-alias z='pazi_cd'
-"#
-                );
-                std::process::exit(0);
-            }
-            Some("bash") => {
-                // ty to mklement0 for this suggested append method:
-                // https://stackoverflow.com/questions/3276247/is-there-a-hook-in-bash-to-find-out-when-the-cwd-changes#comment35222599_3276280
-                // Used under cc by-sa 3.0
-                println!(
-                    "{}",
-                    r#"
-__pazi_add_dir() {
-    # TODO: should pazi keep track of this itself in its datadir?
-    if [[ "${__PAZI_LAST_PWD}" != "${PWD}" ]]; then
-        pazi --add-dir "${PWD}"
-    fi
-    __PAZI_LAST_PWD="${PWD}"
-}
-
-if [[ -z "${PROMPT_COMMAND}" ]]; then
-    PROMPT_COMMAND="__pazi_add_dir;"
-else
-    PROMPT_COMMAND="$(read newVal <<<"$PROMPT_COMMAND"; echo "${newVal%;}; __pazi_add_dir;")"
-fi
-
-pazi_cd() {
-    if [ "$#" -eq 0 ]; then pazi; return $?; fi
-    local to="$(pazi --dir "$@")"
-    local ret=$?
-    if [ "${ret}" != "0" ]; then return "$ret"; fi
-    [ -z "${to}" ] && return 1
-    cd "${to}"
-}
-alias z='pazi_cd'
-"#
-                );
-                std::process::exit(0);
-            }
-            Some(s) => {
-                println!("{}\n\nUnsupported shell: {}", init_matches.usage(), s);
-                std::process::exit(1);
-            }
+            Some(s) => match shells::from_name(s) {
+                Some(s) => {
+                    println!("{}", s.pazi_init());
+                    std::process::exit(0);
+                }
+                None => {
+                    println!("{}\n\nUnsupported shell: {}", init_matches.usage(), s);
+                    std::process::exit(1);
+                }
+            },
             None => {
                 println!("{}\n\ninit requires an argument", init_matches.usage());
                 std::process::exit(1);

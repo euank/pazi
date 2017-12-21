@@ -1,7 +1,7 @@
 extern crate pazi;
 extern crate tempdir;
 
-use integ::pazi::supported_shells::SUPPORTED_SHELLS;
+use integ::pazi::shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
 use harness::{Fasd, Harness, Pazi, Shell};
 use std::time::Duration;
