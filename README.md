@@ -25,17 +25,26 @@ user@host ~/dev/linux $ z -i linux
 user@host ~/dev/linux
 ```
 
-## How do I use it?
+## How do I install pazi?
 
-Installing pazi is easy. Put the pazi binary somewhere in your `$PATH`, and then
-add the following to your `.zshrc` or `.bashrc` (no other shells are currently
-supported):
+First, you need to install the `pazi` binary somewhere in your `$PATH`.
+
+Prebuilt binaries are available on the
+[releases](https://github.com/euank/pazi/releases) page.
+
+If you have the rust toolchain installed, you may alternatively compile from
+this repository or run `cargo install pazi`.
+
+After installing the pazi binary, add the following to your `.zshrc` or
+`.bashrc`:
 
 ```sh
 if command -v pazi &>/dev/null; then
   eval "$(pazi init zsh)" # or 'bash'
 fi
 ```
+
+Finally, re-launch the shell and start zapping around :)
 
 ## What makes pazi different from *X*
 
@@ -51,7 +60,9 @@ Pazi is faster than the other autojump implementations it has been benchmarked a
 
 Pazi is currently a work-in-progress. It mostly works, but it's not ready for a 1.0 release yet.
 
-I think the data-format is stable, so if you want to try it now's a fine time... but it's quite possible you'll run into bugs and rough edges. Please do file issues or PRs if you do!
+The data-format is likely stable (or will be migrated automatically), so now's
+a fine time to try it... but it's quite possible there are bugs and rough
+edges. Please do file issues or PRs as appropriate!
 
 ## License
 
