@@ -173,15 +173,6 @@ impl PathFrecency {
                         None => None,
                     })
             })
-            .filter_map(|el| {
-                if el.1 > (0.5 * 0.5) {
-                    debug!("accepting {} with score {}", el.0, el.1);
-                    Some((el.0, el.1))
-                } else {
-                    debug!("discarding {} with score {}", el.0, el.1);
-                    None
-                }
-            })
             .collect::<Vec<_>>();
 
         // Remove dupe paths, keeping only each with the highest score
@@ -206,6 +197,10 @@ impl PathFrecency {
                 .partial_cmp(&rhs.1)
                 .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
+
+        debug!("{}", deduped.iter().fold("Matched paths:".to_string(), |acc, el| {
+            acc + &format!("\n{} with score {}", el.0, el.1)
+        }));
 
         deduped
     }
