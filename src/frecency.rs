@@ -7,7 +7,7 @@ use std::fmt;
 
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Frecency<T>
 where
     T: Hash + Eq + Ord + Clone,
@@ -54,6 +54,16 @@ where
         };
         while self.frecency.len() > self.max_size {
             self.trim_min();
+        }
+    }
+
+    pub fn insert(&mut self, key: T) {
+        self.insert_with_time(key, SystemTime::now())
+    }
+
+    fn insert_with_time(&mut self, key: T, now: SystemTime) {
+        if !self.frecency.contains_key(&key) {
+            self.visit_with_time(key, now)
         }
     }
 
@@ -151,7 +161,11 @@ mod test {
         f.visit_with_time("foo".to_string(), timef(10));
         f.visit_with_time("bar".to_string(), timef(20));
         f.visit_with_time("foo".to_string(), timef(50));
-        assert_eq!(f.items(), vec![&"foo".to_string(), &"bar".to_string()]);
+        f.insert_with_time("quux".to_string(), timef(70));
+        assert_eq!(f.items(), vec![&"foo".to_string(), &"quux".to_string(), &"bar".to_string()]);
+        let f_clone = f.clone();
+        f.insert_with_time("quux".to_string(), timef(77));
+        assert_eq!(f_clone.items_with_frecency(), f.items_with_frecency());
     }
 
     #[test]

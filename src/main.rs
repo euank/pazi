@@ -21,6 +21,7 @@ mod frecency;
 mod frecent_paths;
 mod interactive;
 
+use std::env;
 use std::process;
 
 use clap::{App, Arg, ArgGroup, SubCommand};
@@ -177,7 +178,12 @@ fn main() {
     } else if flags.is_present("dir") {
         // Safe to unwrap because 'dir' requires 'dir_target'
         let matches = match flags.value_of("dir_target") {
-            Some(to) => frecency.directory_matches(to),
+            Some(to) => {
+                env::current_dir().map(|cwd| {
+                    frecency.maybe_add_relative_to(cwd, to);
+                }).unwrap_or(()); // truly ignore failure to get cwd
+                frecency.directory_matches(to)
+            },
             None => frecency.items_with_frecency(),
         };
         if matches.len() == 0 {
