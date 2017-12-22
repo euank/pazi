@@ -162,7 +162,10 @@ mod test {
         f.visit_with_time("bar".to_string(), timef(20));
         f.visit_with_time("foo".to_string(), timef(50));
         f.insert_with_time("quux".to_string(), timef(70));
-        assert_eq!(f.items(), vec![&"foo".to_string(), &"quux".to_string(), &"bar".to_string()]);
+        assert_eq!(
+            f.items(),
+            vec![&"foo".to_string(), &"quux".to_string(), &"bar".to_string()]
+        );
         let f_clone = f.clone();
         f.insert_with_time("quux".to_string(), timef(77));
         assert_eq!(f_clone.items_with_frecency(), f.items_with_frecency());

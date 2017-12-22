@@ -53,12 +53,15 @@ impl PathFrecency {
         // If the path exists, add it to the database
         base_path.push(relative_path);
         if base_path.is_dir() {
-            base_path.to_str().map(|base_path_str| {
-                debug!("Visited path exists: {}", base_path_str);
-                self.frecency.insert(base_path_str.to_owned());
-                self.dirty = true;
-                true
-            }).unwrap_or(false)
+            base_path
+                .to_str()
+                .map(|base_path_str| {
+                    debug!("Visited path exists: {}", base_path_str);
+                    self.frecency.insert(base_path_str.to_owned());
+                    self.dirty = true;
+                    true
+                })
+                .unwrap_or(false)
         } else {
             false
         }
@@ -198,9 +201,13 @@ impl PathFrecency {
                 .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
         });
 
-        debug!("{}", deduped.iter().fold("Matched paths:".to_string(), |acc, el| {
-            acc + &format!("\n{} with score {}", el.0, el.1)
-        }));
+        debug!(
+            "{}",
+            deduped
+                .iter()
+                .fold("Matched paths:".to_string(), |acc, el| acc
+                    + &format!("\n{} with score {}", el.0, el.1))
+        );
 
         deduped
     }

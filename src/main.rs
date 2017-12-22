@@ -179,11 +179,13 @@ fn main() {
         // Safe to unwrap because 'dir' requires 'dir_target'
         let matches = match flags.value_of("dir_target") {
             Some(to) => {
-                env::current_dir().map(|cwd| {
-                    frecency.maybe_add_relative_to(cwd, to);
-                }).unwrap_or(()); // truly ignore failure to get cwd
+                env::current_dir()
+                    .map(|cwd| {
+                        frecency.maybe_add_relative_to(cwd, to);
+                    })
+                    .unwrap_or(()); // truly ignore failure to get cwd
                 frecency.directory_matches(to)
-            },
+            }
             None => frecency.items_with_frecency(),
         };
         if matches.len() == 0 {
