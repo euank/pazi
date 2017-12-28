@@ -4,9 +4,7 @@ pub struct Bash;
 
 impl Shell for Bash {
     fn pazi_init(&self) -> &'static str {
-        // ty to mklement0 for this suggested append method:
-        // https://stackoverflow.com/questions/3276247/is-there-a-hook-in-bash-to-find-out-when-the-cwd-changes#comment35222599_3276280
-        // Used under cc by-sa 3.0
+        // PROMPT_COMMAND modification inspired by https://github.com/clvv/fasd/blob/90b531a5daaa545c74c7d98974b54cbdb92659fc/fasd#L132-L136
         r#"
 __pazi_add_dir() {
     # TODO: should pazi keep track of this itself in its datadir?
@@ -16,11 +14,10 @@ __pazi_add_dir() {
     __PAZI_LAST_PWD="${PWD}"
 }
 
-if [[ -z "${PROMPT_COMMAND}" ]]; then
-    PROMPT_COMMAND="__pazi_add_dir;"
-else
-    PROMPT_COMMAND="$(read newVal <<<"$PROMPT_COMMAND"; echo "${newVal%;}; __pazi_add_dir;")"
-fi
+case \$PROMPT_COMMAND in
+    *__pazi_add_dir\;*) ;;
+    *) PROMPT_COMMAND="__pazi_add_dir;\$PROMPT_COMMMAND" ;;
+esac
 
 pazi_cd() {
     if [ "$#" -eq 0 ]; then pazi; return $?; fi
