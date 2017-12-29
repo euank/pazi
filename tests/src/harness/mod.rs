@@ -17,9 +17,17 @@ pub struct Harness {
 }
 
 impl Harness {
+    pub fn new_with_preinit(root: &Path, jumper: &Autojumper, shell: &Shell, preinit: &str) -> Self {
+        Self::new_helper(root, jumper, shell, preinit)
+    }
+
     pub fn new(root: &Path, jumper: &Autojumper, shell: &Shell) -> Self {
+        Self::new_helper(root, jumper, shell, "")
+    }
+
+    fn new_helper(root: &Path, jumper: &Autojumper, shell: &Shell, preinit: &str) -> Self {
         let ps1 = "==PAZI==> ";
-        shell.setup(&root, jumper, ps1);
+        shell.setup(&root, jumper, ps1, preinit);
 
         let cmd = shell.command(&root);
         let testshell = TestShell::new(cmd, ps1);
