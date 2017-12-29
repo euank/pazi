@@ -172,3 +172,20 @@ fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
     assert_eq!(z_res, pazi_res);
     assert!(z_res.contains(&root.join("1/tmp").to_string_lossy().to_string()));
 }
+
+// Regression test for https://github.com/euank/pazi/issues/41
+#[test]
+fn it_handles_existing_bash_prompt_command() {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let prompt_cmd = r#"
+PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
+"#;
+    let mut h = Harness::new_with_preinit(&root, &Pazi, &Shell::Bash, prompt_cmd);
+    let slash_tmp_path = root.join("tmp");
+    let slash_tmp = slash_tmp_path.to_string_lossy();
+
+    h.create_dir(&slash_tmp);
+    h.visit_dir(&slash_tmp);
+    assert_eq!(h.jump("tmp"), slash_tmp);
+}
