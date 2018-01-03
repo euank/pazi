@@ -214,7 +214,17 @@ fn main() {
     } else {
         // By default print the frecency
         for el in frecency.items_with_frecency() {
-            println!("{:.4}\t{}", el.1 * 100f64, el.0);
+            // precision for floats only handles the floating part, which leads to unaligned
+            // output, e.g., for a precision value of '3', you might get:
+            // 1.000
+            // 100.000
+            //
+            // By converting it to a string first, and then truncating it, we can get nice prettily
+            // aligned strings.
+            // Note: the string's precision should be at least as long as the printed precision so
+            // there are enough characters.
+            let str_val = format!("{:.5}", (el.1 * 100f64));
+            println!("{:.5}\t{}", str_val, el.0);
         }
     }
     if let Err(e) = frecency.save_to_disk() {
