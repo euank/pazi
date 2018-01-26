@@ -14,34 +14,36 @@ extern crate serde_derive;
 extern crate termion;
 extern crate xdg;
 
-mod shells;
+#[macro_use]
+mod pazi_result;
+
 mod importers;
 mod matcher;
 mod frecency;
 mod frecent_paths;
 mod interactive;
+mod shells;
 
 use std::env;
 
+use pazi_result::*;
 use clap::{App, Arg, ArgGroup, SubCommand};
 use frecent_paths::PathFrecency;
 use shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
-enum PaziResult {
-    Success,
-    SuccessDirectory,
-    Error,
-}
-
 fn main() {
     let res = _main();
-    match res {
-        PaziResult::Error => {
-            std::process::exit(1);
-        }
-        PaziResult::Success | PaziResult::SuccessDirectory => {},
+    let extended_exit_codes = match std::env::var(PAZI_EXTENDED_EXIT_CODES_ENV!()) {
+        Ok(_) => true,
+        Err(_) => false,
+    };
+    if extended_exit_codes {
+        debug!("using extended exit codes");
+        std::process::exit(res.extended_exit_code());
+    } else {
+        std::process::exit(res.exit_code());
     }
 }
 
