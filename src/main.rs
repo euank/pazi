@@ -22,7 +22,6 @@ mod frecent_paths;
 mod interactive;
 
 use std::env;
-use std::process;
 
 use clap::{App, Arg, ArgGroup, SubCommand};
 use frecent_paths::PathFrecency;
@@ -30,7 +29,23 @@ use shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
+enum PaziResult {
+    Success,
+    SuccessDirectory,
+    Error,
+}
+
 fn main() {
+    let res = _main();
+    match res {
+        PaziResult::Error => {
+            std::process::exit(1);
+        }
+        PaziResult::Success | PaziResult::SuccessDirectory => {},
+    }
+}
+
+fn _main() -> PaziResult {
     let flags = App::new("pazi")
         .about("A fast autojump tool")
         .version(crate_version!())
@@ -97,16 +112,16 @@ fn main() {
             Some(s) => match shells::from_name(s) {
                 Some(s) => {
                     println!("{}", s.pazi_init());
-                    std::process::exit(0);
+                    return PaziResult::Success;
                 }
                 None => {
                     println!("{}\n\nUnsupported shell: {}", init_matches.usage(), s);
-                    std::process::exit(1);
+                    return PaziResult::Error;
                 }
             },
             None => {
                 println!("{}\n\ninit requires an argument", init_matches.usage());
-                std::process::exit(1);
+                return PaziResult::Error;
             }
         }
     }
@@ -136,16 +151,16 @@ fn main() {
                             "imported {} items from fasd (out of {} in its db)",
                             stats.items_visited, stats.items_considered
                         );
-                        process::exit(0);
+                        return PaziResult::Success;
                     }
                     Err(e) => {
                         println!("pazi: error adding directory: {}", e);
-                        process::exit(1);
+                        return PaziResult::Error;
                     }
                 },
                 Err(e) => {
                     println!("pazi: error importing from fasd: {}", e);
-                    process::exit(1);
+                    return PaziResult::Error;
                 }
             },
             Some(s) => {
@@ -154,25 +169,26 @@ fn main() {
                     import_matches.usage(),
                     s
                 );
-                std::process::exit(1);
+                return PaziResult::Error;
             }
             None => {
                 println!("{}\n\nimport requires an argument", import_matches.usage());
-                std::process::exit(1);
+                return PaziResult::Error;
             }
         }
     }
 
+    let res;
     if let Some(dir) = flags.value_of("add-dir") {
         frecency.visit(dir.to_string());
 
         match frecency.save_to_disk() {
             Ok(_) => {
-                process::exit(0);
+                return PaziResult::Success;
             }
             Err(e) => {
                 println!("pazi: error adding directory: {}", e);
-                process::exit(1);
+                return PaziResult::Error;
             }
         }
     } else if flags.is_present("dir") {
@@ -189,7 +205,7 @@ fn main() {
             None => frecency.items_with_frecency(),
         };
         if matches.len() == 0 {
-            process::exit(1);
+            return PaziResult::Error;
         }
 
         if flags.is_present("interactive") {
@@ -197,20 +213,22 @@ fn main() {
             match interactive::filter(matches, std::io::stdin(), stdout) {
                 Ok(el) => {
                     print!("{}", el);
+                    res = PaziResult::SuccessDirectory;
                 }
                 Err(e) => {
                     println!("{}", e);
-                    process::exit(1);
+                    return PaziResult::Error;
                 }
             }
         } else {
             // unwrap is safe because of the 'matches.len() == 0' check above.
             print!("{}", matches.last().unwrap().0);
+            res = PaziResult::SuccessDirectory;
         }
     } else if flags.value_of("dir_target") != None {
         // Something got interpreted as 'dir_target' even though this wasn't in '--dir'
         println!("pazi: could not parse given flags.\n\n{}", flags.usage());
-        process::exit(1);
+        return PaziResult::Error;
     } else {
         // By default print the frecency
         for el in frecency.items_with_frecency() {
@@ -226,10 +244,12 @@ fn main() {
             let str_val = format!("{:.5}", (el.1 * 100f64));
             println!("{:.5}\t{}", str_val, el.0);
         }
+        res = PaziResult::Success;
     }
     if let Err(e) = frecency.save_to_disk() {
         // leading newline in case it was after a 'print' above
         println!("\npazi: error saving db changes: {}", e);
-        process::exit(1);
+        return PaziResult::Error;
     }
+    res
 }
