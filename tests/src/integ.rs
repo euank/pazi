@@ -189,3 +189,24 @@ PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/
     h.visit_dir(&slash_tmp);
     assert_eq!(h.jump("tmp"), slash_tmp);
 }
+
+// Test for https://github.com/euank/pazi/issues/49
+#[test]
+fn it_handles_help_output() {
+    for shell in SUPPORTED_SHELLS.iter() {
+        let s = Shell::from_str(shell);
+        it_handles_help_output_shell(&s);
+    }
+}
+
+fn it_handles_help_output_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Pazi, shell);
+    let help1 = h.run_cmd("pazi --help && echo $?");
+    let help2 = h.run_cmd("z -h && echo $?");
+    let help3 = h.run_cmd("z --help && echo $?");
+    assert_eq!(help1, help2);
+    assert_eq!(help2, help3);
+    assert!(help1.ends_with("\n0"));
+}
