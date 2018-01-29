@@ -24,4 +24,8 @@ impl Autojumper for Pazi {
             &Shell::Conch => unimplemented!(),
         }
     }
+
+    fn jump_alias(&self) -> &'static str {
+        "z"
+    }
 }
