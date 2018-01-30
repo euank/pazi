@@ -12,6 +12,7 @@ addons:
     packages:
     - zsh
     - bash
+    - python3
 
 env:
   global:
@@ -20,4 +21,4 @@ env:
 script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
-- cd tests && cargo test -v --features="$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo nightly || echo default)"
+- cd tests && cargo test -v --features="$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo nightly || echo default)" -- --test-threads=1
