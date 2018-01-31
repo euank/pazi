@@ -10,22 +10,24 @@ pub use self::shells::Shell;
 pub use self::autojumpers::Autojumper;
 pub use self::autojumpers::pazi::Pazi;
 pub use self::autojumpers::fasd::Fasd;
+pub use self::autojumpers::autojump::Autojump;
 pub use self::autojumpers::None as NoJumper;
 
-pub struct Harness {
+pub struct Harness<'a> {
     testshell: TestShell,
+    jumper: &'a Autojumper,
 }
 
-impl Harness {
-    pub fn new_with_preinit(root: &Path, jumper: &Autojumper, shell: &Shell, preinit: &str) -> Self {
+impl<'a> Harness<'a> {
+    pub fn new_with_preinit(root: &Path, jumper: &'a Autojumper, shell: &Shell, preinit: &str) -> Self {
         Self::new_helper(root, jumper, shell, preinit)
     }
 
-    pub fn new(root: &Path, jumper: &Autojumper, shell: &Shell) -> Self {
+    pub fn new(root: &Path, jumper: &'a Autojumper, shell: &Shell) -> Self {
         Self::new_helper(root, jumper, shell, "")
     }
 
-    fn new_helper(root: &Path, jumper: &Autojumper, shell: &Shell, preinit: &str) -> Self {
+    fn new_helper(root: &Path, jumper: &'a Autojumper, shell: &Shell, preinit: &str) -> Self {
         let ps1 = "==PAZI==> ";
         shell.setup(&root, jumper, ps1, preinit);
 
@@ -33,6 +35,7 @@ impl Harness {
         let testshell = TestShell::new(cmd, ps1);
         Harness {
             testshell: testshell,
+            jumper: jumper,
         }
     }
 
@@ -49,7 +52,7 @@ impl Harness {
     }
 
     pub fn jump(&mut self, search: &str) -> String {
-        self.testshell.run(&format!("z '{}' && pwd", search))
+        self.testshell.run(&format!("{} '{}' >/dev/null && pwd", self.jumper.jump_alias(), search))
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {
@@ -57,7 +60,7 @@ impl Harness {
     }
 }
 
-impl Drop for Harness {
+impl<'a> Drop for Harness<'a> {
     fn drop(&mut self) {
         self.testshell.shutdown();
     }

@@ -1,3 +1,6 @@
 [submodule "tests/testbins/fasd"]
 	path = tests/testbins/fasd
 	url = https://github.com/clvv/fasd.git
+[submodule "tests/testbins/autojump"]
+	path = tests/testbins/autojump
+	url = https://github.com/wting/autojump

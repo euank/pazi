@@ -40,4 +40,8 @@ eval "$({} --init posix-alias bash-hook)"
             &Shell::Conch => unimplemented!(),
         }
     }
+
+    fn jump_alias(&self) -> &'static str{
+        "z"
+    }
 }
