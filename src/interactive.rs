@@ -41,11 +41,19 @@ pub fn filter<'a>(
     });
     chan_select! {
         signal.recv() =>  {
-            return Err(FilterError::String("interrupted".to_string()));
+            return Err(FilterError::NoSelection);
         },
         ruser_input.recv() -> res => {
             return res.unwrap()
                 .map_err(|_| FilterError::String("unable to read input".to_string()))
+                .and_then(|val| {
+                    if val.trim().is_empty() {
+                        debug!("user input is empty");
+                        Err(FilterError::NoSelection)
+                    } else {
+                        Ok(val)
+                    }
+                })
                 .and_then(|val| {
                     val.trim().parse::<usize>()
                         .map_err(|e| {
@@ -71,6 +79,7 @@ pub fn filter<'a>(
 pub enum FilterError {
     WriteErr(IOErr),
     String(String),
+    NoSelection,
 }
 
 impl From<IOErr> for FilterError {
@@ -89,6 +98,7 @@ impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &FilterError::String(ref s) => s.fmt(f),
+            &FilterError::NoSelection => Ok(()),
             &FilterError::WriteErr(ref ioe) => ioe.fmt(f),
         }
     }

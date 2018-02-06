@@ -16,19 +16,21 @@ macro_rules! EXIT_CODE {
     (SUCCESS) => { 90 };
     (SUCCESS_DIR) => { 91 };
     (ERROR) => { 92 };
+    (ERROR_NO_INPUT) => { 93 };
 }
 
 pub enum PaziResult {
     Success,
     SuccessDirectory,
     Error,
+    ErrorNoInput,
 }
 
 impl PaziResult {
     pub fn exit_code(self) -> i32 {
         match self {
             PaziResult::Success | PaziResult::SuccessDirectory => 0,
-            PaziResult::Error => 1,
+            PaziResult::Error | PaziResult::ErrorNoInput => 1,
         }
     }
 
@@ -37,6 +39,7 @@ impl PaziResult {
             PaziResult::Success => EXIT_CODE!(SUCCESS),
             PaziResult::SuccessDirectory => EXIT_CODE!(SUCCESS_DIR),
             PaziResult::Error => EXIT_CODE!(ERROR),
+            PaziResult::ErrorNoInput => EXIT_CODE!(ERROR_NO_INPUT),
         }
     }
 }
