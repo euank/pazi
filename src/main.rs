@@ -133,6 +133,12 @@ fn _main() -> PaziResult {
             .filter(None, log::LogLevelFilter::Debug)
             .init()
             .unwrap();
+
+        // Capture ctrl-c so calling script
+        // can print debug output
+        if let Err(()) = intercept_ctrl_c() {
+            return PaziResult::Error
+        }
     }
 
     let xdg_dirs =
@@ -254,4 +260,72 @@ fn _main() -> PaziResult {
         return PaziResult::Error;
     }
     res
+}
+
+fn intercept_ctrl_c() -> Result<(),()> {
+    // When Pazi is run from a script or shell function,
+    // pressing ctrl-c will send SIGINT to the process group
+    // containing both Pazi *and* the shell function.
+    //
+    // However, sometimes we just want to SIGINT Pazi but
+    // allow the caller to keep running (e.g., to print output).
+    // To accomplish this, we need to put Pazi in its own
+    // process group and make that the foreground process group.
+    // That way, when ctrl-c sends a SIGINT, the only process
+    // to receive it is Pazi.
+    //
+    unsafe {
+        // Create a new process group with this process in it.
+        let setpgid_res = libc::setpgid(0, 0);
+        let errno = *libc::__errno_location();
+        if setpgid_res != 0 {
+            debug!("Got {} from setpgid with errno {}", setpgid_res, errno);
+            return Err(())
+        }
+
+        // Get the ID of the process group we just made.
+        let pgrp = libc::getpgrp();
+
+        // Make this process group the foreground process.
+        // SIGTTOU is sent if this process group isn't already foreground,
+        // so we ignore it during the change.
+
+        // New SIGTTOU handler that ignores the signal
+        let ignore_action = libc::sigaction {
+            sa_sigaction: libc::SIG_IGN,
+            sa_mask: std::mem::zeroed(),
+            sa_flags: 0,
+            sa_restorer: None,
+        };
+        // Place to save old SIGTTOU handler
+        let mut old_action = std::mem::zeroed();
+
+        // Ignore SIGTTOU and save previous action
+        let sigaction_res = libc::sigaction(libc::SIGTTOU, &ignore_action, &mut old_action);
+        let errno = *libc::__errno_location();
+        if sigaction_res != 0 {
+            debug!("Got {} from sigaction with errno {}", sigaction_res, errno);
+            return Err(())
+        }
+
+        // Make our process group the foreground process group
+        // (giving us access to stdin, etc)
+        let tcsetpgrp_res = libc::tcsetpgrp(libc::STDIN_FILENO, pgrp);
+        let errno = *libc::__errno_location();
+
+        // Put the old SIGTTOU signal handler back
+        // We try to do this even if tcsetpgrp failed!
+        let sigaction_res = libc::sigaction(libc::SIGTTOU, &old_action, std::ptr::null_mut());
+        let sigaction_errno = *libc::__errno_location();
+
+        // Handle tcsetpgrp and sigaction errors
+        if tcsetpgrp_res != 0 || sigaction_res != 0 {
+            debug!("Got pgrp {}", pgrp);
+            debug!("Got {} from tcsetpgrp with errno {}", tcsetpgrp_res, errno);
+            debug!("Got {} from sigaction with errno {}", sigaction_res, sigaction_errno);
+            return Err(())
+        }
+    }
+
+    Ok(())
 }
