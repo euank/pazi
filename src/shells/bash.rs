@@ -25,10 +25,12 @@ pazi_cd() {
     local res; "#, /* note: this is declared separately because 'local' clobbers pazi's return
     code, see https://lists.gnu.org/archive/html/bug-bash/2010-03/msg00007.html */
             r#"
+    trap 'true' INT
     res="$("#,
             PAZI_EXTENDED_EXIT_CODES_ENV!(),
             r#"=1 pazi --dir "$@")"
     local ret=$?
+    trap - INT
     case $ret in
     "#,
             EXIT_CODE!(SUCCESS),
