@@ -30,6 +30,9 @@ pazi_cd() {
     "#,
             EXIT_CODE!(ERROR),
             r#") echo "${res}" && return 1;;
+    "#,
+            EXIT_CODE!(ERROR_NO_INPUT),
+            r#") return 1;;
     *) echo "${res}" && return $ret;;
     esac
 }

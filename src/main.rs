@@ -217,6 +217,9 @@ fn _main() -> PaziResult {
                     print!("{}", el);
                     res = PaziResult::SuccessDirectory;
                 }
+                Err(interactive::FilterError::NoSelection) => {
+                    return PaziResult::ErrorNoInput;
+                }
                 Err(e) => {
                     println!("{}", e);
                     return PaziResult::Error;
