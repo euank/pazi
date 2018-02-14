@@ -16,10 +16,12 @@ add-zsh-hook chpwd __pazi_add_dir
 pazi_cd() {
     if [ "$#" -eq 0 ]; then pazi; return $?; fi
     local res
+    trap 'true' INT
     res="$("#,
             PAZI_EXTENDED_EXIT_CODES_ENV!(),
             r#"=1 pazi --dir "$@")"
     local ret=$?
+    trap - INT
     case $ret in
     "#,
             EXIT_CODE!(SUCCESS),
