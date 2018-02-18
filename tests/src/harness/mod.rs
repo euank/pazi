@@ -18,21 +18,51 @@ pub struct Harness<'a> {
     jumper: &'a Autojumper,
 }
 
+pub struct HarnessBuilder<'a> {
+    root: &'a Path,
+    shell: &'a Shell,
+    jumper: &'a Autojumper,
+    preinit: Option<&'a str>,
+    cgroup: bool,
+}
+
+impl<'a> HarnessBuilder<'a> {
+    pub fn new(root: &'a Path, jumper: &'a Autojumper, shell: &'a Shell) -> Self {
+        HarnessBuilder {
+            root: root,
+            shell: shell,
+            jumper: jumper,
+            cgroup: false,
+            preinit: None,
+        }
+    }
+
+    pub fn preinit(mut self, preinit: &'a str) -> Self {
+        self.preinit = Some(preinit);
+        self
+    }
+
+    pub fn cgroup(mut self, cgroup: bool) -> Self {
+        self.cgroup = cgroup;
+        self
+    }
+
+    pub fn finish(self) -> Harness<'a> {
+        Harness::new(self.root, self.shell, self.jumper, self.preinit, self.cgroup)
+    }
+}
+
 impl<'a> Harness<'a> {
-    pub fn new_with_preinit(root: &Path, jumper: &'a Autojumper, shell: &Shell, preinit: &str) -> Self {
-        Self::new_helper(root, jumper, shell, preinit)
-    }
-
-    pub fn new(root: &Path, jumper: &'a Autojumper, shell: &Shell) -> Self {
-        Self::new_helper(root, jumper, shell, "")
-    }
-
-    fn new_helper(root: &Path, jumper: &'a Autojumper, shell: &Shell, preinit: &str) -> Self {
+    fn new(root: &Path, shell: &Shell, jumper: &'a Autojumper, preinit: Option<&str>, cgroup: bool) -> Self {
         let ps1 = "==PAZI==> ";
-        shell.setup(&root, jumper, ps1, preinit);
+        shell.setup(&root, jumper, ps1, preinit.unwrap_or(""));
 
         let cmd = shell.command(&root);
-        let testshell = TestShell::new(cmd, ps1);
+        let testshell = if cgroup {
+            TestShell::new_in_cgroup(cmd, ps1, PAZI_CG)
+        } else {
+            TestShell::new(cmd, ps1)
+        };
         Harness {
             testshell: testshell,
             jumper: jumper,
@@ -58,7 +88,15 @@ impl<'a> Harness<'a> {
     pub fn run_cmd(&mut self, cmd: &str) -> String {
         self.testshell.run(cmd)
     }
+
+    // wait for any children of the shell to vanish; this is approximated by assuming that the
+    // shell will be the only child task of this process.
+    pub fn wait_children(&mut self) {
+        self.testshell.wait_children()
+    }
 }
+
+const PAZI_CG: &'static str = "pazi_integ";
 
 impl<'a> Drop for Harness<'a> {
     fn drop(&mut self) {

@@ -1,20 +1,37 @@
 extern crate pty;
 extern crate vte;
+extern crate libc;
+extern crate rand;
 
 use std::os::unix::process::CommandExt;
 use std::process::Command;
+use std::path::Path;
+use std::fs;
 use std::io::Read;
 use std::io::Write;
 use std::time::Duration;
 use std::sync::mpsc;
 use std::thread;
 
+use self::rand::Rng;
+
+use super::shells;
+
+#[derive(Clone)]
+struct CgroupMetadata {
+    slice: String,
+    scope: String,
+}
+
 pub struct TestShell {
     // fork is here for lifetime reasons; can't drop it until the pty is done
     #[allow(unused)] fork: pty::fork::Fork,
     pty: pty::fork::Master,
+    pid: libc::pid_t,
     output: mpsc::Receiver<String>,
     eof: mpsc::Receiver<()>,
+    // cgroup, if set, is the cgroup this test shell should run within
+    cgroup: Option<CgroupMetadata>,
 }
 
 // VTEData is to handle lines after the mess of vte terminal stuff.
@@ -109,23 +126,68 @@ impl vte::Perform for VTEData {
 }
 
 impl TestShell {
-    // TODO pattern instead of regex once that's stable
     // new creates a new testshell. It is assumed that the passed in command is for a posix-ish
     // shell. The shell should print output generally line-by-line and after executing a command,
     // it should print the PS1 variable.
     // This PS1 variable is used to determine when commands have executed, so no commands run in
     // this testshell may print the PS1 value.
     // Note: this command does fork off a child. There are dragons. Handle with care.
-    pub fn new(mut cmd: Command, ps1: &str) -> Self {
-        cmd.env("PS1", ps1);
+    pub fn new(cmd: shells::ShellCmd, ps1: &str) -> Self {
+        Self::new_internal(cmd, ps1, None)
+    }
+    pub fn new_in_cgroup(cmd: shells::ShellCmd, ps1: &str, cgroup: &str) -> Self {
+        Self::new_internal(cmd, ps1, Some(cgroup))
+    }
+
+    fn new_internal(cmd: shells::ShellCmd, ps1: &str, cgroup: Option<&str>) -> Self {
+        let mut cgroupmeta = None;
+        let mut cgcmd = if let Some(cg) = cgroup {
+            if unsafe { libc::geteuid() } != 0 {
+                panic!("cgroup pid tracking requires root");
+            }
+            let scope = format!("test_shell_{}", rand::thread_rng().next_u64());
+            let mut tmpcmd = Command::new("systemd-run");
+            // TODO: use `--user` so this doesn't require root; wait for
+            // https://github.com/systemd/systemd/issues/3388 to be fixed on travis + most linux
+            // distros
+            tmpcmd.args(vec![
+                "--no-ask-password",
+                "--slice",
+                cg,
+                "--quiet",
+                "--scope",
+                "--unit",
+                &scope,
+                "--",
+                cmd.cmd,
+            ]);
+            tmpcmd.env_clear();
+
+            cgroupmeta = Some(CgroupMetadata {
+                slice: cg.to_string(),
+                scope: scope,
+            });
+
+            tmpcmd
+        } else {
+            let mut tmpcmd = Command::new(cmd.cmd);
+            tmpcmd.env_clear();
+            tmpcmd
+        };
+        cgcmd.env("PS1", ps1);
+        for env in cmd.env {
+            cgcmd.env(env.0, env.1);
+        }
         let fork = pty::fork::Fork::from_ptmx().unwrap();
 
+        let child_pid;
         let mut pty = match fork {
             pty::fork::Fork::Child(_) => {
-                let err = cmd.exec();
+                let err = cgcmd.exec();
                 panic!("exec failed: {}", err);
             }
-            pty::fork::Fork::Parent(_, m) => {
+            pty::fork::Fork::Parent(c, m) => {
+                child_pid = c;
                 m.grantpt().unwrap();
                 m.unlockpt().unwrap();
                 m
@@ -204,15 +266,49 @@ impl TestShell {
 
         TestShell {
             fork: fork,
+            pid: child_pid,
             pty: pty,
             eof: eof_got,
             output: command_out,
+            cgroup: cgroupmeta,
         }
     }
 
     pub fn run(&mut self, cmd: &str) -> String {
         self.pty.write(format!("{}\n", cmd).as_bytes()).unwrap();
         self.output.recv_timeout(Duration::from_secs(100)).unwrap()
+    }
+
+    pub fn wait_children(&mut self) {
+        if self.cgroup.is_none() {
+            panic!("can only wait for children on testshells created with cgroups");
+        }
+        let cgmeta = self.cgroup.clone().unwrap();
+        // TODO: don't assume unified
+        let cgprocfile = format!("/sys/fs/cgroup/unified/{}.slice/{}.scope/cgroup.procs", cgmeta.slice, cgmeta.scope);
+
+        let mut output = String::new();
+        let mut pids = Vec::new();
+        loop {
+            let mut f = fs::File::open(Path::new(&cgprocfile)).unwrap();
+            output.truncate(0);
+            pids.truncate(0);
+            f.read_to_string(&mut output).unwrap();
+            for line in output.lines() {
+                let pid = line.parse::<i32>().unwrap();
+                if pid == self.pid {
+                    continue
+                }
+                pids.push(pid);
+            }
+            if pids.len() == 0 {
+                return
+            }
+            unsafe {
+                let mut status = 0;
+                libc::waitpid(pids[0], &mut status, libc::WEXITED);
+            };
+        }
     }
 
     pub fn shutdown(&mut self) {

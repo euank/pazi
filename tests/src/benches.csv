@@ -7,6 +7,7 @@
 # 
 # The generated benchmarks will test all combinations j * s for that function.
 cd_bench, NoJumper Pazi Fasd Autojump, Zsh Bash
+cd_bench_sync, NoJumper Pazi Fasd Autojump, Zsh Bash
 cd_50_bench, NoJumper Pazi Fasd Autojump, Zsh Bash
 jump_bench, Pazi Fasd Autojump, Zsh Bash
 jump_large_db_bench, Pazi Fasd Autojump, Zsh Bash

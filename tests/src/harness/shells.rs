@@ -2,12 +2,16 @@ use std::path::Path;
 use harness::autojumpers::Autojumper;
 use std::fs;
 use std::io::Write;
-use std::process::Command;
 
 pub enum Shell {
     Bash,
     Zsh,
     #[allow(dead_code)] Conch,
+}
+
+pub struct ShellCmd<'a> {
+    pub cmd: &'a str,
+    pub env: Vec<(&'a str, String)>,
 }
 
 impl Shell {
@@ -69,10 +73,10 @@ export PATH=$PATH:$(dirname "{0}")
             .unwrap();
     }
 
-    pub fn command(&self, root: &Path) -> Command {
-        let mut cmd = Command::new(self.name());
-        cmd.env_clear();
-        cmd.env("HOME", root.join("home/pazi"));
-        cmd
+    pub fn command(&self, root: &Path) -> ShellCmd {
+        ShellCmd {
+            cmd: self.name(),
+            env: vec![("HOME", root.join("home/pazi").to_string_lossy().to_string())],
+        }
     }
 }
