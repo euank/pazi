@@ -17,12 +17,6 @@ use self::rand::Rng;
 
 use super::shells;
 
-#[derive(Clone)]
-struct CgroupMetadata {
-    slice: String,
-    scope: String,
-}
-
 pub struct TestShell {
     // fork is here for lifetime reasons; can't drop it until the pty is done
     #[allow(unused)] fork: pty::fork::Fork,
@@ -30,8 +24,8 @@ pub struct TestShell {
     pid: libc::pid_t,
     output: mpsc::Receiver<String>,
     eof: mpsc::Receiver<()>,
-    // cgroup, if set, is the cgroup this test shell should run within
-    cgroup: Option<CgroupMetadata>,
+    // cgroup, if set, is the cgroup this test shell is running in
+    cgroup: Option<String>,
 }
 
 // VTEData is to handle lines after the mess of vte terminal stuff.
@@ -140,50 +134,28 @@ impl TestShell {
     }
 
     fn new_internal(cmd: shells::ShellCmd, ps1: &str, cgroup: Option<&str>) -> Self {
-        let mut cgroupmeta = None;
-        let mut cgcmd = if let Some(cg) = cgroup {
+        let mut cgpath = None;
+        if let Some(cg) = cgroup {
             if unsafe { libc::geteuid() } != 0 {
                 panic!("cgroup pid tracking requires root");
             }
             let scope = format!("test_shell_{}", rand::thread_rng().next_u64());
-            let mut tmpcmd = Command::new("systemd-run");
-            // TODO: use `--user` so this doesn't require root; wait for
-            // https://github.com/systemd/systemd/issues/3388 to be fixed on travis + most linux
-            // distros
-            tmpcmd.args(vec![
-                "--no-ask-password",
-                "--slice",
-                cg,
-                "--quiet",
-                "--scope",
-                "--unit",
-                &scope,
-                "--",
-                cmd.cmd,
-            ]);
-            tmpcmd.env_clear();
-
-            cgroupmeta = Some(CgroupMetadata {
-                slice: cg.to_string(),
-                scope: scope,
-            });
-
-            tmpcmd
-        } else {
-            let mut tmpcmd = Command::new(cmd.cmd);
-            tmpcmd.env_clear();
-            tmpcmd
+            let unified_path = format!("/sys/fs/cgroup/unified/{}.slice/{}.scope", cg, scope);
+            fs::create_dir_all(&unified_path).expect("could not create cg directory");
+            cgpath = Some(unified_path);
         };
-        cgcmd.env("PS1", ps1);
+        let mut shellcmd = Command::new(cmd.cmd);
+        shellcmd.env_clear();
+        shellcmd.env("PS1", ps1);
         for env in cmd.env {
-            cgcmd.env(env.0, env.1);
+            shellcmd.env(env.0, env.1);
         }
         let fork = pty::fork::Fork::from_ptmx().unwrap();
 
         let child_pid;
         let mut pty = match fork {
             pty::fork::Fork::Child(_) => {
-                let err = cgcmd.exec();
+                let err = shellcmd.exec();
                 panic!("exec failed: {}", err);
             }
             pty::fork::Fork::Parent(c, m) => {
@@ -193,6 +165,11 @@ impl TestShell {
                 m
             }
         };
+
+        if let Some(cg) = cgpath.clone() {
+            let mut f = fs::OpenOptions::new().write(true).open(format!("{}/cgroup.procs", cg)).expect("no cgroup.procs file");
+            f.write(format!("{}\n", child_pid).as_bytes()).expect("write pid err");
+        }
 
         let (write_command_out, command_out) = mpsc::channel();
         let (write_eof_got, eof_got) = mpsc::channel();
@@ -270,7 +247,7 @@ impl TestShell {
             pty: pty,
             eof: eof_got,
             output: command_out,
-            cgroup: cgroupmeta,
+            cgroup: cgpath,
         }
     }
 
@@ -283,9 +260,8 @@ impl TestShell {
         if self.cgroup.is_none() {
             panic!("can only wait for children on testshells created with cgroups");
         }
-        let cgmeta = self.cgroup.clone().unwrap();
         // TODO: don't assume unified
-        let cgprocfile = format!("/sys/fs/cgroup/unified/{}.slice/{}.scope/cgroup.procs", cgmeta.slice, cgmeta.scope);
+        let cgprocfile = format!("{}/cgroup.procs", self.cgroup.clone().unwrap());
 
         let mut output = String::new();
         let mut pids = Vec::new();
