@@ -210,3 +210,24 @@ fn it_handles_help_output_shell(shell: &Shell) {
     assert_eq!(help2, help3);
     assert!(help1.ends_with("\n0"));
 }
+
+// Test for https://github.com/euank/pazi/issues/60
+#[test]
+fn it_handles_things_that_look_sorta_like_init_but_not_really() {
+    for shell in SUPPORTED_SHELLS.iter() {
+        let s = Shell::from_str(shell);
+        it_handles_things_that_look_sorta_etc_shell(&s);
+    }
+}
+
+fn it_handles_things_that_look_sorta_etc_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path();
+    let mut h = Harness::new(&root, &Pazi, shell);
+    let igni = root.join("ignition").into_os_string().into_string().unwrap();
+
+    h.create_dir(&igni);
+    h.visit_dir(&igni);
+    h.visit_dir(&root.to_string_lossy());
+    assert_eq!(h.jump("igni"), igni);
+}
