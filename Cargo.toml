@@ -9,8 +9,13 @@ readme = "README.md"
 keywords = ["autojump", "shell", "productivity-tool"]
 license = "GPL-3.0"
 
+[dependencies.clap]
+version = "~2"
+default-features = false
+# Remove 'suggestions' feature, see #60
+features = ["color", "vec_map"]
+
 [dependencies]
-clap = "~2"
 rmp-serde = "~0.13"
 serde = "~1"
 serde_derive = "~1"
