@@ -72,7 +72,7 @@ fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
 fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
-    let mut h = HarnessBuilder::new(&root, jumper, shell).finish();
+    let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(true).finish();
     let dirp = root.join("tmp_target");
     let dir = dirp.to_str().unwrap();
 
@@ -81,10 +81,12 @@ fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
         let dirn = root.join(format!("tmp{}", i));
         h.create_dir(&dirn.to_string_lossy());
         h.visit_dir(&dirn.to_string_lossy());
+        h.wait_children();
     }
 
     h.create_dir(&dir);
     h.visit_dir(&dir);
+    h.wait_children();
 
     b.iter(move || {
         assert_eq!(&h.jump("tmp_target"), &dir);
