@@ -9,7 +9,10 @@ tempdir = "~0.3"
 pty = "~0.2"
 vte = "~0.3"
 pazi = { path = ".." }
+libc = "~0.2"
+rand = "0.3"
 
 [features]
 default = []
 nightly = []
+cgroups2 = []

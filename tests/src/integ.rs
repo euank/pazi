@@ -3,7 +3,7 @@ extern crate tempdir;
 
 use integ::pazi::shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
-use harness::{Fasd, Harness, Pazi, Shell};
+use harness::{Fasd, HarnessBuilder, Pazi, Shell};
 use std::time::Duration;
 use std::thread::sleep;
 
@@ -19,7 +19,7 @@ fn it_jumps() {
 fn it_jumps_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
 
@@ -40,7 +40,7 @@ fn it_jumps_to_exact_directory() {
 fn it_jumps_to_exact_directory_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
     let unvisited_dir_path = slash_tmp_path.join("asdf");
@@ -63,7 +63,7 @@ fn it_jumps_to_more_frecent_items() {
 fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
     let a_dir = a_dir_path.to_string_lossy();
@@ -102,7 +102,7 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
     let root = tmpdir.path();
 
     {
-        let mut fasd = Harness::new(&root, &Fasd, shell);
+        let mut fasd = HarnessBuilder::new(&root, &Fasd, shell).finish();
         fasd.create_dir(&root.join("tmp").to_string_lossy());
         // visit twice because fasd uses 'history 1' to do stuff in bash... which means yeah, it's
         // 1-command-delayed
@@ -111,7 +111,7 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
     }
 
     {
-        let mut h = Harness::new(&root, &Pazi, shell);
+        let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
         assert_eq!(
             h.run_cmd("pazi import fasd").trim(),
             "imported 1 items from fasd (out of 1 in its db)"
@@ -132,7 +132,7 @@ fn it_ignores_dead_dirs_on_cd() {
 fn it_ignores_dead_dirs_on_cd_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
 
     h.create_dir(&root.join("1/tmp").to_string_lossy());
     h.create_dir(&root.join("2/tmp").to_string_lossy());
@@ -159,7 +159,7 @@ fn it_prints_list_on_lonely_z() {
 fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
 
     h.create_dir(&root.join("1/tmp").to_string_lossy());
     h.create_dir(&root.join("2/tmp").to_string_lossy());
@@ -181,7 +181,7 @@ fn it_handles_existing_bash_prompt_command() {
     let prompt_cmd = r#"
 PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
 "#;
-    let mut h = Harness::new_with_preinit(&root, &Pazi, &Shell::Bash, prompt_cmd);
+    let mut h = HarnessBuilder::new(&root, &Pazi, &Shell::Bash).preinit(prompt_cmd).finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
 
@@ -202,7 +202,7 @@ fn it_handles_help_output() {
 fn it_handles_help_output_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let help1 = h.run_cmd("pazi --help && echo $?");
     let help2 = h.run_cmd("z -h && echo $?");
     let help3 = h.run_cmd("z --help && echo $?");
@@ -223,7 +223,7 @@ fn it_handles_things_that_look_sorta_like_init_but_not_really() {
 fn it_handles_things_that_look_sorta_etc_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
-    let mut h = Harness::new(&root, &Pazi, shell);
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let igni = root.join("ignition").into_os_string().into_string().unwrap();
 
     h.create_dir(&igni);

@@ -4,9 +4,11 @@
 # 1. The name of the benchmark function to run
 # 2. A space-separated list of "Autojumper"s, 'j'
 # 3. A space-separated list of shells, 's'
+# 4. A bool indicating if it needs cgroups2 to run
 # 
 # The generated benchmarks will test all combinations j * s for that function.
-cd_bench, NoJumper Pazi Fasd Autojump, Zsh Bash
-cd_50_bench, NoJumper Pazi Fasd Autojump, Zsh Bash
-jump_bench, Pazi Fasd Autojump, Zsh Bash
-jump_large_db_bench, Pazi Fasd Autojump, Zsh Bash
+cd_bench, NoJumper Pazi Fasd Autojump, Zsh Bash, false
+cd_bench_sync, NoJumper Pazi Fasd Autojump, Zsh Bash, true
+cd_50_bench, NoJumper Pazi Fasd Autojump, Zsh Bash, false
+jump_bench, Pazi Fasd Autojump, Zsh Bash, true
+jump_large_db_bench, Pazi Fasd Autojump, Zsh Bash, true
