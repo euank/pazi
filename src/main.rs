@@ -201,7 +201,7 @@ fn _main() -> PaziResult {
         }
     } else if flags.is_present("dir") {
         // Safe to unwrap because 'dir' requires 'dir_target'
-        let matches = match flags.value_of("dir_target") {
+        let mut matches = match flags.value_of("dir_target") {
             Some(to) => {
                 env::current_dir()
                     .map(|cwd| {
@@ -212,10 +212,6 @@ fn _main() -> PaziResult {
             }
             None => frecency.items_with_frecency(),
         };
-        if matches.len() == 0 {
-            return PaziResult::Error;
-        }
-
         if flags.is_present("interactive") {
             let stdout = termion::get_tty().unwrap();
             match interactive::filter(matches, std::io::stdin(), stdout) {
@@ -231,10 +227,11 @@ fn _main() -> PaziResult {
                     return PaziResult::Error;
                 }
             }
-        } else {
-            // unwrap is safe because of the 'matches.len() == 0' check above.
-            print!("{}", matches.last().unwrap().0);
+        } else if let Some((path, _)) = matches.next() {
+            print!("{}", path);
             res = PaziResult::SuccessDirectory;
+        } else {
+            res = PaziResult::Error;
         }
     } else if flags.value_of("dir_target") != None {
         // Something got interpreted as 'dir_target' even though this wasn't in '--dir'

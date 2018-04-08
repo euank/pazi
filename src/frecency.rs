@@ -108,20 +108,8 @@ where
         v
     }
 
-    pub fn retain<F>(&mut self, mut pred: F) -> bool
-    where
-        F: FnMut(&T) -> bool,
-    {
-        let mut any_removed = false;
-        self.frecency.retain(|k, _| {
-            if pred(k) {
-                true
-            } else {
-                any_removed = true;
-                false
-            }
-        });
-        any_removed
+    pub fn remove(&mut self, key: &T) -> Option<f64> {
+        self.frecency.remove(key)
     }
 
     pub fn normalized_frecency(&self) -> Vec<(&T, f64)> {
