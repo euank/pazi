@@ -4,3 +4,6 @@
 [submodule "tests/testbins/autojump"]
 	path = tests/testbins/autojump
 	url = https://github.com/wting/autojump
+[submodule "tests/testbins/z"]
+	path = tests/testbins/z
+	url = https://github.com/rupa/z

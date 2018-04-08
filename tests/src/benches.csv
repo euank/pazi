@@ -7,8 +7,14 @@
 # 4. A bool indicating if it needs cgroups2 to run
 # 
 # The generated benchmarks will test all combinations j * s for that function.
+#
+# Note: z is left out of benches with zsh because it frequently fails and prints:
+# > mv: cannot stat \'/tmp/pazi_bench.yyFRBViCftwU/home/pazi/.z.537\': No such file or directory
+# It works fine in bash, and the cd bench works, but for some reason the jump
+# one in zsh constantly hits that. I think it has to do with how $RANDOM works
+# in zsh.
 cd_bench, NoJumper Pazi Fasd Autojump, Zsh Bash, false
-cd_bench_sync, NoJumper Pazi Fasd Autojump, Zsh Bash, true
-cd_50_bench, NoJumper Pazi Fasd Autojump, Zsh Bash, false
-jump_bench, Pazi Fasd Autojump, Zsh Bash, true
-jump_large_db_bench, Pazi Fasd Autojump, Zsh Bash, true
+cd_bench, Z, Bash, false
+cd_bench_sync, NoJumper Pazi Fasd Autojump Z, Zsh Bash, true
+jump_bench jump_large_db_bench, Pazi Fasd Autojump, Zsh Bash, true
+jump_bench jump_large_db_bench, Z, Bash, true

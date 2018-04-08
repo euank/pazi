@@ -29,33 +29,35 @@ fn main() {
         if parts.len() != 4 {
             panic!("each csv line should have 4 parts");
         }
-        let bench_name = parts[0].trim();
+        let bench_names = parts[0].trim().split(" ");
         let bench_jumpers = parts[1].trim().split(" ");
         let bench_shells = parts[2].trim().split(" ");
         let bench_waits = parts[3].parse::<bool>().unwrap();
 
-        for jumper in bench_jumpers {
-            for shell in bench_shells.clone() {
-                let fn_name = format!(
-                    "{}_{}_{}",
-                    bench_name,
-                    jumper.to_lowercase(),
-                    shell.to_lowercase()
-                );
-                let maybe_ignore = if bench_waits {
-                    "\n#[cfg_attr(not(feature = \"cgroups2\"), ignore)]"
-                } else {
-                    ""
-                };
-                code += format!(
-                    r#"
-#[bench]{4}
-fn {0}(b: &mut Bencher) {{
-    {1}(b, &{2}, &Shell::{3});
-}}
-"#,
-                    &fn_name, &bench_name, &jumper, &shell, maybe_ignore,
-                ).as_str();
+        for bench_name in bench_names {
+            for jumper in bench_jumpers.clone() {
+                for shell in bench_shells.clone() {
+                    let fn_name = format!(
+                        "{}_{}_{}",
+                        bench_name,
+                        jumper.to_lowercase(),
+                        shell.to_lowercase()
+                    );
+                    let maybe_ignore = if bench_waits {
+                        "\n#[cfg_attr(not(feature = \"cgroups2\"), ignore)]"
+                    } else {
+                        ""
+                    };
+                    code += format!(
+                        r#"
+    #[bench]{4}
+    fn {0}(b: &mut Bencher) {{
+        {1}(b, &{2}, &Shell::{3});
+    }}
+    "#,
+                        &fn_name, &bench_name, &jumper, &shell, maybe_ignore,
+                    ).as_str();
+                }
             }
         }
     }
