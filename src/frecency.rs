@@ -102,7 +102,7 @@ where
             .iter()
             .map(|(ref t, f)| (*t, f.clone()))
             .collect::<Vec<_>>();
-        v.sort_unstable_by(descending_frecency);
+        v.sort_by(descending_frecency);
         v
     }
 
@@ -117,7 +117,7 @@ where
         }
         let min = items[items.len() - 1].1;
         let max = items[0].1;
-        items
+        let mut items: Vec<_> = items
             .into_iter()
             .map(|(s, v)| {
                 let normalized = (v - min) / (max - min);
@@ -127,7 +127,9 @@ where
                     (s, normalized)
                 }
             })
-            .collect()
+            .collect();
+        items.sort_by(descending_frecency);
+        items
     }
 }
 
