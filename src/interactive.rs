@@ -8,12 +8,10 @@ use std::fs;
 use std::thread;
 use chan_signal;
 use chan;
-use frecent_paths::PathIter;
 
-pub fn filter<'a>(opts_iter: PathIter<'a>,
-                  stdin: Stdin,
-                  stdout: fs::File)
-                  -> Result<String, FilterError> {
+pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String, FilterError>
+    where I: Iterator<Item = (String, f64)>
+{
     // So, this is a massive abstraction leak, but unix signals are icky so it's not really
     // surprising.
     // Because we're popping over to an alternative screen buffer, we need to restore the teriminal

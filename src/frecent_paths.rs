@@ -99,22 +99,16 @@ impl PathFrecency {
             .map_err(|e| format!("could not atomically rename: {}", e).to_string())
     }
 
-    pub fn items_with_frecency_vec(&self) -> Vec<(String, f64)> {
-        let mut items = self.frecency
+    pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {
+        let items = self.frecency
             .normalized_frecency()
-            .iter()
-            .map(|&(p, f)| (p.clone(), f.clone()))
+            .into_iter()
+            .map(|(p, f)| (p.to_owned(), f))
             .collect::<Vec<_>>();
-        items.sort_by(descending_frecency);
-        items
+        FrecentPathIter::new(self, items)
     }
 
-    pub fn items_with_frecency<'a>(&'a mut self) -> PathIter<'a> {
-        let items = self.items_with_frecency_vec();
-        PathIter::new(self, items)
-    }
-
-    pub fn directory_matches<'a>(&'a mut self, filter: &str) -> PathIter<'a> {
+    pub fn directory_matches<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
         // 'best directory' is a tricky concept, as is 'match.
         //
         // There's a continuum from "exact string match" to "no characters in common", and we
@@ -158,33 +152,41 @@ impl PathFrecency {
                                            &ci_sm,
                                            &pc_ci_sm];
 
-        let matched = self.items_with_frecency_vec()
-            .iter()
-            .flat_map(|item| {
-                matchers.iter()
-                    .filter_map(move |m| {
-                        m.matches(&item.0, filter)
-                            .map(|v| (item.0.to_owned(), v * 0.8 + item.1 * 0.2))
-                    })
-            })
-            .collect::<Vec<_>>();
 
-        // Remove dupe paths, keeping only each with the highest score
         let mut dedupe_map: HashMap<String, f64> = HashMap::new();
-        for el in &matched {
-            match dedupe_map.get(&el.0) {
-                Some(&val) => {
-                    if el.1 > val {
-                        dedupe_map.insert(el.0.to_owned(), el.1);
+
+        // TODO: when NLL happens, rewrite this to eliminate extra curlies
+        // and the `if insert` block
+        {
+            // Run each matcher on each path
+            let items = self.frecency.normalized_frecency();
+            let matched = items.iter()
+                .flat_map(|item| {
+                    matchers.iter()
+                        .filter_map(move |m| {
+                            m.matches(item.0, filter)
+                                .map(|v| (item.0, v * 0.8 + item.1 * 0.2))
+                        })
+                });
+
+            // Remove dupe paths, keeping only each with the highest score
+            for el in matched {
+                let insert = match dedupe_map.get_mut(el.0) {
+                    Some(val) => {
+                        if el.1 > *val {
+                            *val = el.1
+                        }
+                        false
                     }
-                }
-                None => {
+                    None => true,
+                };
+                if insert {
                     dedupe_map.insert(el.0.to_owned(), el.1);
                 }
             }
         }
 
-        let mut deduped = dedupe_map.into_iter().collect::<Vec<_>>();
+        let mut deduped: Vec<_> = dedupe_map.into_iter().collect();
         deduped.sort_by(descending_frecency);
 
         debug!("{}",
@@ -192,7 +194,7 @@ impl PathFrecency {
                    .fold("Matched paths:".to_string(),
                          |acc, el| acc + &format!("\n{} with score {}", el.0, el.1)));
 
-        PathIter::new(self, deduped)
+        FrecentPathIter::new(self, deduped)
     }
 
     pub fn trim(&mut self, path: &String) -> bool {
@@ -207,21 +209,24 @@ impl PathFrecency {
     }
 }
 
-pub struct PathIter<'a> {
+
+/// An owning iterator over frecent paths
+/// which removes nonexistent directories from the database.
+pub struct FrecentPathIter<'a> {
     db: &'a mut PathFrecency,
     paths: IntoIter<(String, f64)>,
 }
 
-impl<'a> PathIter<'a> {
-    pub fn new(db: &'a mut PathFrecency, paths: Vec<(String, f64)>) -> PathIter<'a> {
-        PathIter {
+impl<'a> FrecentPathIter<'a> {
+    pub fn new(db: &'a mut PathFrecency, paths: Vec<(String, f64)>) -> FrecentPathIter<'a> {
+        FrecentPathIter {
             db: db,
             paths: paths.into_iter(),
         }
     }
 }
 
-impl<'a> Iterator for PathIter<'a> {
+impl<'a> Iterator for FrecentPathIter<'a> {
     type Item = (String, f64);
 
     fn next(&mut self) -> Option<Self::Item> {
