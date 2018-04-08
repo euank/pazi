@@ -162,9 +162,9 @@ impl PathFrecency {
             .iter()
             .flat_map(|item| {
                 matchers.iter()
-                    .filter_map(move |m| match m.matches(&item.0, filter) {
-                        Some(v) => Some((item.0.to_owned(), v * 0.8 + item.1 * 0.2)),
-                        None => None,
+                    .filter_map(move |m| {
+                        m.matches(&item.0, filter)
+                            .map(|v| (item.0.to_owned(), v * 0.8 + item.1 * 0.2))
                     })
             })
             .collect::<Vec<_>>();
