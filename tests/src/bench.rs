@@ -2,7 +2,7 @@ extern crate tempdir;
 extern crate test;
 
 use tempdir::TempDir;
-use harness::{Autojumper, Fasd, HarnessBuilder, NoJumper, Pazi, Shell, Autojump};
+use harness::{Autojumper, Fasd, Z, HarnessBuilder, NoJumper, Pazi, Shell, Autojump};
 use self::test::Bencher;
 
 fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
