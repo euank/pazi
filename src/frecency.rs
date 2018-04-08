@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::f64;
@@ -101,10 +102,7 @@ where
             .iter()
             .map(|(ref t, f)| (*t, f.clone()))
             .collect::<Vec<_>>();
-        v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
-            lhs.partial_cmp(&rhs)
-                .expect(&format!("{} could not be compared to {}", lhs, rhs))
-        });
+        v.sort_unstable_by(descending_frecency);
         v
     }
 
@@ -131,6 +129,13 @@ where
             })
             .collect()
     }
+}
+
+pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
+    // NaN shouldn't happen
+    rhs.1
+        .partial_cmp(&lhs.1)
+        .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 // frecent_paths is a specialization of frecency that understands the semantics of stored paths.
 // It does things like the messyness of checking for a directory's existence and such.
 
-use frecency::Frecency;
+use frecency::{descending_frecency, Frecency};
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::fs;
@@ -105,13 +105,7 @@ impl PathFrecency {
             .iter()
             .map(|&(p, f)| (p.clone(), f.clone()))
             .collect::<Vec<_>>();
-        items.sort_by(|lhs, rhs| {
-            // NaN shouldn't happen
-            lhs.1
-                .partial_cmp(&rhs.1)
-                .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
-        });
-
+        items.sort_by(descending_frecency);
         items
     }
 
@@ -191,12 +185,7 @@ impl PathFrecency {
         }
 
         let mut deduped = dedupe_map.into_iter().collect::<Vec<_>>();
-        deduped.sort_by(|lhs, rhs| {
-            // NaN shouldn't happen
-            rhs.1
-                .partial_cmp(&lhs.1)
-                .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
-        });
+        deduped.sort_by(descending_frecency);
 
         debug!("{}",
                deduped.iter()
