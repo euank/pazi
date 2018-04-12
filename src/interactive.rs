@@ -9,11 +9,9 @@ use std::thread;
 use chan_signal;
 use chan;
 
-pub fn filter<'a>(
-    opts: Vec<(&'a String, f64)>,
-    stdin: Stdin,
-    stdout: fs::File,
-) -> Result<String, FilterError> {
+pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String, FilterError>
+    where I: Iterator<Item = (String, f64)>
+{
     // So, this is a massive abstraction leak, but unix signals are icky so it's not really
     // surprising.
     // Because we're popping over to an alternative screen buffer, we need to restore the teriminal
@@ -29,6 +27,13 @@ pub fn filter<'a>(
     let (suser_input, ruser_input) = chan::sync(0);
     // Wait for a signal or for the user to select a choice.
     write!(alt, "{}{}", clear::All, cursor::Goto(1, 1))?;
+
+    let opts = {
+        let mut opts = opts_iter.collect::<Vec<_>>();
+        opts.reverse();
+        opts
+    };
+
     for i in 0..opts.len() {
         write!(alt, "{}\t{}\t{}\n", opts.len() - i, opts[i].1, opts[i].0)?;
     }

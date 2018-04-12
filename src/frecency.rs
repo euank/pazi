@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::f64;
@@ -101,27 +102,12 @@ where
             .iter()
             .map(|(ref t, f)| (*t, f.clone()))
             .collect::<Vec<_>>();
-        v.sort_unstable_by(|&(_, rhs), &(_, lhs)| {
-            lhs.partial_cmp(&rhs)
-                .expect(&format!("{} could not be compared to {}", lhs, rhs))
-        });
+        v.sort_by(descending_frecency);
         v
     }
 
-    pub fn retain<F>(&mut self, mut pred: F) -> bool
-    where
-        F: FnMut(&T) -> bool,
-    {
-        let mut any_removed = false;
-        self.frecency.retain(|k, _| {
-            if pred(k) {
-                true
-            } else {
-                any_removed = true;
-                false
-            }
-        });
-        any_removed
+    pub fn remove(&mut self, key: &T) -> Option<f64> {
+        self.frecency.remove(key)
     }
 
     pub fn normalized_frecency(&self) -> Vec<(&T, f64)> {
@@ -131,7 +117,7 @@ where
         }
         let min = items[items.len() - 1].1;
         let max = items[0].1;
-        items
+        let mut items: Vec<_> = items
             .into_iter()
             .map(|(s, v)| {
                 let normalized = (v - min) / (max - min);
@@ -141,8 +127,17 @@ where
                     (s, normalized)
                 }
             })
-            .collect()
+            .collect();
+        items.sort_by(descending_frecency);
+        items
     }
+}
+
+pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
+    // NaN shouldn't happen
+    rhs.1
+        .partial_cmp(&lhs.1)
+        .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
 }
 
 #[cfg(test)]
