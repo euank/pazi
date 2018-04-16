@@ -101,7 +101,8 @@ impl PathFrecency {
 
     pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {
         let items = self.frecency
-            .normalized_frecency()
+            .items()
+            .normalized()
             .into_iter()
             .map(|(p, f)| (p.to_owned(), f))
             .collect::<Vec<_>>();
@@ -159,7 +160,7 @@ impl PathFrecency {
         // and the `if insert` block
         {
             // Run each matcher on each path
-            let items = self.frecency.normalized_frecency();
+            let items = self.frecency.items().normalized();
             let matched = items.iter()
                 .flat_map(|item| {
                     matchers.iter()
@@ -197,6 +198,10 @@ impl PathFrecency {
         FrecentPathIter::new(self, deduped)
     }
 
+    pub fn underlying_frecency(&mut self, filter: Option<String>) -> Frecency<String> {
+        self.frecency.clone()
+    }
+
     pub fn trim(&mut self, path: &String) -> bool {
         if Path::new(path).is_dir() {
             false
@@ -208,7 +213,6 @@ impl PathFrecency {
         }
     }
 }
-
 
 /// An owning iterator over frecent paths
 /// which removes nonexistent directories from the database.
