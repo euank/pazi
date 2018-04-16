@@ -73,6 +73,10 @@ where
         self.insert_with_time(key, SystemTime::now())
     }
 
+    pub fn overwrite(&mut self, key: T, value: f64) {
+        self.frecency.insert(key, value);
+    }
+
     fn insert_with_time(&mut self, key: T, now: SystemTime) {
         if !self.frecency.contains_key(&key) {
             self.visit_with_time(key, now)

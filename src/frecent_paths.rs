@@ -12,11 +12,26 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
 
+#[derive(Clone)]
 pub struct PathFrecency {
     frecency: Frecency<String>,
     // whether the frecency file is 'dirty' and should be updated on save
     dirty: bool,
     path: PathBuf,
+}
+
+pub struct PathFrecencyDiff {
+    additions: Vec<(String, f64)>,
+    removals: Vec<String>,
+}
+
+impl PathFrecencyDiff {
+    pub fn new(additions: Vec<(String, f64)>, removals: Vec<String>) -> Self {
+        Self {
+            additions: additions,
+            removals: removals,
+        }
+    }
 }
 
 impl PathFrecency {
@@ -66,6 +81,25 @@ impl PathFrecency {
         } else {
             false
         }
+    }
+
+    pub fn apply_diff(&mut self, diff: PathFrecencyDiff) -> Result<(), String> {
+        for removal in diff.removals {
+            match self.frecency.remove(&removal) {
+                Some(_) => {}
+                None => {
+                    return Err(format!("no such item to remove: {}", removal));
+                }
+            }
+            self.dirty = true;
+        }
+
+        for addition in diff.additions {
+            self.frecency.overwrite(addition.0, addition.1);
+            self.dirty = true;
+        }
+
+        Ok(())
     }
 
     pub fn save_to_disk(&self) -> Result<(), String> {

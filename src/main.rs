@@ -11,12 +11,16 @@ extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate snailquote;
+extern crate tempfile;
 extern crate termion;
+extern crate which;
 extern crate xdg;
 
 #[macro_use]
 mod pazi_result;
 
+mod edit;
 mod frecency;
 mod frecent_paths;
 mod importers;
@@ -51,6 +55,7 @@ fn main() {
 // This should be replaced by a normal enum + const "as_str" for each variant once rust stable
 // supports const functions.
 macro_rules! SUBCOMMAND {
+    (Edit) => { "edit" };
     (Import) => { "import" };
     (Init) => { "init" };
     (Jump) => { "jump" };
@@ -68,6 +73,14 @@ fn _main() -> PaziResult {
                 .help("print debug information to stderr")
                 .long("debug")
                 .env("PAZI_DEBUG"),
+        )
+        .subcommand(
+            SubCommand::with_name(SUBCOMMAND!(Edit))
+                .about("Edit the frecency database")
+                .usage("pazi edit [<filter>]")
+                .arg(Arg::with_name("filter").help(
+                    "filter matches down further and edit that subset"
+                )),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Init))
@@ -117,9 +130,8 @@ fn _main() -> PaziResult {
                 .about("Add or visit a directory in the frecency database")
                 .arg(Arg::with_name("dir_target"))
         )
-        // Deprecated in favor of .PaziSubcommand::Jump
-        // left temporarily for backwards compatibility
-        // Remove before 1.0
+        // Code after this comment is deprecated in favor of .PaziSubcommand::Jump, but is left in
+        // temporarily for backwards compatibility. Remove before 1.0
         .arg(
             Arg::with_name("dir")
                 .help(
@@ -175,6 +187,9 @@ fn _main() -> PaziResult {
     }
 
     match flags.subcommand() {
+        (SUBCOMMAND!(Edit), Some(edit)) => {
+            return handle_edit(edit);
+        }
         (SUBCOMMAND!(Import), Some(import)) => {
             return handle_import(import);
         }
@@ -221,7 +236,6 @@ fn _main() -> PaziResult {
             }
         }
     } else if flags.is_present("dir") {
-        // Safe to unwrap because 'dir' requires 'dir_target'
         let mut matches = match flags.value_of("dir_target") {
             Some(to) => {
                 env::current_dir()
@@ -292,6 +306,40 @@ fn load_frecency() -> PathFrecency {
         .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
 
     PathFrecency::load(&frecency_path)
+}
+
+fn handle_edit(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    let mut fclone = frecency.clone();
+    let matches = match cmd.value_of("filter") {
+        Some(filter) => fclone.directory_matches_raw(filter),
+        None => fclone.items_with_frecency_raw(),
+    };
+    let match_vec = matches.collect();
+    let diff = match edit::edit(&match_vec) {
+        Ok(d) => d,
+        Err(e) => {
+            println!("Error editing: {}", e);
+            return PaziResult::Error;
+        }
+    };
+    match frecency.apply_diff(diff) {
+        Err(e) => {
+            println!("Error applying edit diff: {}", e);
+            return PaziResult::Error;
+        }
+        Ok(()) => {}
+    };
+    match frecency.save_to_disk() {
+        Ok(_) => {
+            return PaziResult::Success;
+        }
+        Err(e) => {
+            println!("pazi: error saving db: {}", e);
+            return PaziResult::Error;
+        }
+    }
 }
 
 fn handle_init(cmd: &ArgMatches) -> PaziResult {
