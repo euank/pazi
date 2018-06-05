@@ -112,7 +112,34 @@ impl PathFrecency {
         FrecentPathIter::new(self, items)
     }
 
+    pub fn items_with_frecency_raw<'a>(&'a mut self) -> FrecentPathIter<'a> {
+        let mut items = self
+            .frecency
+            .items()
+            .raw()
+            .into_iter()
+            .map(|(p, f)| (p.to_owned(), f))
+            .collect::<Vec<_>>();
+        items.sort_by(descending_frecency);
+        FrecentPathIter::new(self, items)
+    }
+
     pub fn directory_matches<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
+        self.directory_matches_impl(filter, true, |item, weight, match_weight| {
+            (item, match_weight * 0.8 + weight * 0.2)
+        })
+    }
+
+    pub fn directory_matches_raw<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
+        self.directory_matches_impl(filter, false, |item, weight, _| (item, weight))
+    }
+
+    fn directory_matches_impl<'a>(
+        &'a mut self,
+        filter: &str,
+        normalize: bool,
+        weight: fn(item: &String, frecency: f64, match_weight: f64) -> (&String, f64),
+    ) -> FrecentPathIter<'a> {
         // 'best directory' is a tricky concept, as is 'match.
         //
         // There's a continuum from "exact string match" to "no characters in common", and we
@@ -138,7 +165,6 @@ impl PathFrecency {
         // 6) Levenshtein distance may be fallen back upon for real "fuzzyness", but should be
         //    weighted carefully low; sometimes it is better to force a user to make a new query
         //    than to make too strange of a shot in the dark.
-
         let em = ExactMatcher {};
         let sm = SubstringMatcher {};
         let ci_em = CaseInsensitiveMatcher::new(&em);
@@ -164,11 +190,15 @@ impl PathFrecency {
         // and the `if insert` block
         {
             // Run each matcher on each path
-            let items = self.frecency.items().normalized();
+            let items = if normalize {
+                self.frecency.items().normalized()
+            } else {
+                self.frecency.items().raw()
+            };
             let matched = items.iter().flat_map(|item| {
                 matchers.iter().filter_map(move |m| {
                     m.matches(item.0, filter)
-                        .map(|v| (item.0, v * 0.8 + item.1 * 0.2))
+                        .map(move |v| weight(item.0, item.1, v))
                 })
             });
 

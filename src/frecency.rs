@@ -159,6 +159,10 @@ where
 
         items
     }
+
+    pub fn raw(self) -> Vec<(&'a T, f64)> {
+        self.items
+    }
 }
 
 pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
