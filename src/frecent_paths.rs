@@ -234,10 +234,6 @@ impl PathFrecency {
         FrecentPathIter::new(self, deduped)
     }
 
-    pub fn underlying_frecency(&mut self, filter: Option<String>) -> Frecency<String> {
-        self.frecency.clone()
-    }
-
     pub fn trim(&mut self, path: &String) -> bool {
         if Path::new(path).is_dir() {
             false
