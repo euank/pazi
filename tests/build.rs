@@ -1,9 +1,9 @@
 use std::env;
-use std::path::Path;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::BufRead;
+use std::io::BufReader;
 use std::io::Write;
+use std::path::Path;
 
 fn main() {
     let crate_root = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");

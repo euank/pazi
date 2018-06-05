@@ -107,7 +107,8 @@ where
     pub fn items(&self) -> FrecencyView<T> {
         let mut min = None;
         let mut max = None;
-        let v = self.frecency
+        let v = self
+            .frecency
             .iter()
             .map(|(ref t, f)| {
                 if min == None || f < min.unwrap() {
@@ -142,7 +143,8 @@ where
         }
         let min = self.min;
         let max = self.max;
-        let mut items: Vec<_> = self.items
+        let mut items: Vec<_> = self
+            .items
             .into_iter()
             .map(|(s, v)| {
                 let normalized = (v - min) / (max - min);

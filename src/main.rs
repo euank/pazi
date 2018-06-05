@@ -17,18 +17,18 @@ extern crate xdg;
 #[macro_use]
 mod pazi_result;
 
-mod importers;
-mod matcher;
 mod frecency;
 mod frecent_paths;
+mod importers;
 mod interactive;
+mod matcher;
 mod shells;
 
 use std::env;
 
-use pazi_result::*;
-use clap::{App, Arg, ArgMatches, ArgGroup, SubCommand, AppSettings};
+use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 use frecent_paths::PathFrecency;
+use pazi_result::*;
 use shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
@@ -170,7 +170,7 @@ fn _main() -> PaziResult {
         // Capture ctrl-c so calling script
         // can print debug output
         if let Err(()) = intercept_ctrl_c() {
-            return PaziResult::Error
+            return PaziResult::Error;
         }
     }
 
@@ -190,11 +190,11 @@ fn _main() -> PaziResult {
         (SUBCOMMAND!(Visit), Some(visit)) => {
             return handle_visit(visit);
         }
-        unknown => {
-            debug!("unrecognized subcommand: not an error for backwards compatibility: {:?}", unknown)
-        }
+        unknown => debug!(
+            "unrecognized subcommand: not an error for backwards compatibility: {:?}",
+            unknown
+        ),
     };
-
 
     // the remainder of this fn is backwards compatibility code, all of this should vanish before
     // 1.0
@@ -294,7 +294,6 @@ fn load_frecency() -> PathFrecency {
     PathFrecency::load(&frecency_path)
 }
 
-
 fn handle_init(cmd: &ArgMatches) -> PaziResult {
     match cmd.value_of("shell") {
         Some(s) => match shells::from_name(s) {
@@ -324,13 +323,9 @@ fn handle_import(cmd: &ArgMatches) -> PaziResult {
                 println!("error importing: {}", e);
                 return PaziResult::Error;
             }
-        }
+        },
         Some(s) => {
-            println!(
-                "{}\n\nUnsupported import target: {}",
-                cmd.usage(),
-                s
-            );
+            println!("{}\n\nUnsupported import target: {}", cmd.usage(), s);
             return PaziResult::Error;
         }
         None => {
@@ -358,14 +353,15 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
     let mut frecency = load_frecency();
     let res;
 
-    { // once non-lexical-lifetimes hits stable, remove these braces
+    {
+        // once non-lexical-lifetimes hits stable, remove these braces
         let mut matches = match cmd.value_of("dir_target") {
             Some(to) => {
                 env::current_dir()
                     .map(|cwd| {
                         frecency.maybe_add_relative_to(cwd, to);
                     })
-                .unwrap_or(()); // truly ignore failure to get cwd
+                    .unwrap_or(()); // truly ignore failure to get cwd
                 frecency.directory_matches(to)
             }
             None => frecency.items_with_frecency(),
@@ -437,7 +433,6 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
         None => frecency.items_with_frecency(),
     };
 
-
     for el in matches {
         // precision for floats only handles the floating part, which leads to unaligned
         // output, e.g., for a precision value of '3', you might get:
@@ -455,7 +450,7 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
     PaziResult::Success
 }
 
-fn intercept_ctrl_c() -> Result<(),()> {
+fn intercept_ctrl_c() -> Result<(), ()> {
     // When Pazi is run from a script or shell function,
     // pressing ctrl-c will send SIGINT to the process group
     // containing both Pazi *and* the shell function.
@@ -473,7 +468,7 @@ fn intercept_ctrl_c() -> Result<(),()> {
         let errno = *libc::__errno_location();
         if setpgid_res != 0 {
             debug!("Got {} from setpgid with errno {}", setpgid_res, errno);
-            return Err(())
+            return Err(());
         }
 
         // Get the ID of the process group we just made.
@@ -498,7 +493,7 @@ fn intercept_ctrl_c() -> Result<(),()> {
         let errno = *libc::__errno_location();
         if sigaction_res != 0 {
             debug!("Got {} from sigaction with errno {}", sigaction_res, errno);
-            return Err(())
+            return Err(());
         }
 
         // Make our process group the foreground process group
@@ -515,8 +510,11 @@ fn intercept_ctrl_c() -> Result<(),()> {
         if tcsetpgrp_res != 0 || sigaction_res != 0 {
             debug!("Got pgrp {}", pgrp);
             debug!("Got {} from tcsetpgrp with errno {}", tcsetpgrp_res, errno);
-            debug!("Got {} from sigaction with errno {}", sigaction_res, sigaction_errno);
-            return Err(())
+            debug!(
+                "Got {} from sigaction with errno {}",
+                sigaction_res, sigaction_errno
+            );
+            return Err(());
         }
     }
 

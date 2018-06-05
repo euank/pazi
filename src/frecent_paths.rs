@@ -2,15 +2,15 @@
 // It does things like the messyness of checking for a directory's existence and such.
 
 use frecency::{descending_frecency, Frecency};
-use std::path::{Path, PathBuf};
+use libc;
+use matcher::*;
+use rmp_serde;
+use serde;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
-use serde::Serialize;
-use serde;
-use libc;
-use rmp_serde;
-use matcher::*;
 
 pub struct PathFrecency {
     frecency: Frecency<String>,
@@ -79,12 +79,14 @@ impl PathFrecency {
             return Err("could not get pid".to_string());
         }
 
-        let fname = self.path
+        let fname = self
+            .path
             .file_name()
             .ok_or("path did not have file component".to_string())?;
 
         let tmpfile_name = format!(".{}.{}", fname.to_string_lossy(), my_pid);
-        let tmpfile_dir = self.path
+        let tmpfile_dir = self
+            .path
             .parent()
             .ok_or("unable to get parent".to_string())?;
         let tmpfile_path = tmpfile_dir.join(tmpfile_name);
@@ -100,7 +102,8 @@ impl PathFrecency {
     }
 
     pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {
-        let items = self.frecency
+        let items = self
+            .frecency
             .items()
             .normalized()
             .into_iter()
@@ -144,15 +147,16 @@ impl PathFrecency {
         let pc_ci_em = PathComponentMatcher::new(&ci_em);
         let ci_sm = CaseInsensitiveMatcher::new(&sm);
         let pc_ci_sm = PathComponentMatcher::new(&ci_sm);
-        let matchers: Vec<&Matcher> = vec![&ExactMatcher {},
-                                           &ci_em,
-                                           &pc_em,
-                                           &pc_sm,
-                                           &pc_ci_em,
-                                           &SubstringMatcher {},
-                                           &ci_sm,
-                                           &pc_ci_sm];
-
+        let matchers: Vec<&Matcher> = vec![
+            &ExactMatcher {},
+            &ci_em,
+            &pc_em,
+            &pc_sm,
+            &pc_ci_em,
+            &SubstringMatcher {},
+            &ci_sm,
+            &pc_ci_sm,
+        ];
 
         let mut dedupe_map: HashMap<String, f64> = HashMap::new();
 
@@ -161,14 +165,12 @@ impl PathFrecency {
         {
             // Run each matcher on each path
             let items = self.frecency.items().normalized();
-            let matched = items.iter()
-                .flat_map(|item| {
-                    matchers.iter()
-                        .filter_map(move |m| {
-                            m.matches(item.0, filter)
-                                .map(|v| (item.0, v * 0.8 + item.1 * 0.2))
-                        })
-                });
+            let matched = items.iter().flat_map(|item| {
+                matchers.iter().filter_map(move |m| {
+                    m.matches(item.0, filter)
+                        .map(|v| (item.0, v * 0.8 + item.1 * 0.2))
+                })
+            });
 
             // Remove dupe paths, keeping only each with the highest score
             for el in matched {
@@ -190,10 +192,14 @@ impl PathFrecency {
         let mut deduped: Vec<_> = dedupe_map.into_iter().collect();
         deduped.sort_by(descending_frecency);
 
-        debug!("{}",
-               deduped.iter()
-                   .fold("Matched paths:".to_string(),
-                         |acc, el| acc + &format!("\n{} with score {}", el.0, el.1)));
+        debug!(
+            "{}",
+            deduped
+                .iter()
+                .fold("Matched paths:".to_string(), |acc, el| {
+                    acc + &format!("\n{} with score {}", el.0, el.1)
+                })
+        );
 
         FrecentPathIter::new(self, deduped)
     }
