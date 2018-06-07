@@ -74,6 +74,11 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff, String> {
     tmpf.read_to_string(&mut new_contents)
         .map_err(|e| format!("error reading file: {}", e))?;
 
+    if new_contents.trim() == serialized_data.trim() {
+        debug!("identical data read; shortcutting out");
+        return Ok(PathFrecencyDiff::new(Vec::new(), Vec::new()));
+    }
+
     let mut new_map = deserialize(&new_contents)?;
 
     let mut removals = Vec::new();
