@@ -47,6 +47,20 @@ fn main() {
     }
 }
 
+enum PaziSubcommand {
+    Import,
+    Init,
+}
+
+impl PaziSubcommand {
+    fn as_str(&self) -> &'static str {
+        match self {
+            PaziSubcommand::Import => "import",
+            PaziSubcommand::Init => "init",
+        }
+    }
+}
+
 fn _main() -> PaziResult {
     let flags = App::new("pazi")
         .about("A fast autojump tool")
@@ -59,7 +73,7 @@ fn _main() -> PaziResult {
                 .env("PAZI_DEBUG"),
         )
         .subcommand(
-            SubCommand::with_name("init")
+            SubCommand::with_name(PaziSubcommand::Init.as_str())
                 .about("Prints intialization logic for the given shell to eval")
                 .usage(format!("pazi init [ {} ]", SUPPORTED_SHELLS.join(" | ")).as_str())
                 .arg(Arg::with_name("shell").help(&format!(
@@ -68,7 +82,7 @@ fn _main() -> PaziResult {
                 ))),
         )
         .subcommand(
-            SubCommand::with_name("import")
+            SubCommand::with_name(PaziSubcommand::Import.as_str())
                 .about("Import from another autojump program")
                 .usage("pazi import fasd")
                 .arg(Arg::with_name("autojumper").help(&format!(
@@ -109,7 +123,7 @@ fn _main() -> PaziResult {
         .group(ArgGroup::with_name("operation").args(&["dir", "add-dir"]))
         .get_matches();
 
-    if let Some(init_matches) = flags.subcommand_matches("init") {
+    if let Some(init_matches) = flags.subcommand_matches(PaziSubcommand::Init.as_str()) {
         match init_matches.value_of("shell") {
             Some(s) => match shells::from_name(s) {
                 Some(s) => {
@@ -150,7 +164,7 @@ fn _main() -> PaziResult {
 
     let mut frecency = PathFrecency::load(&frecency_path);
 
-    if let Some(import_matches) = flags.subcommand_matches("import") {
+    if let Some(import_matches) = flags.subcommand_matches(PaziSubcommand::Import.as_str()) {
         match import_matches.value_of("autojumper") {
             Some("fasd") => match importers::Fasd::import(&mut frecency) {
                 Ok(stats) => match frecency.save_to_disk() {
