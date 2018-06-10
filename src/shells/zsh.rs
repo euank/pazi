@@ -14,7 +14,7 @@ autoload -Uz add-zsh-hook
 add-zsh-hook chpwd __pazi_add_dir
 
 pazi_cd() {
-    if [ "$#" -eq 0 ]; then pazi; return $?; fi
+    if [ "$#" -eq 0 ]; then pazi view; return $?; fi
     local res
     res="$("#,
             PAZI_EXTENDED_EXIT_CODES_ENV!(),

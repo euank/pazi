@@ -168,7 +168,7 @@ fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
     h.visit_dir(&root.join("2/tmp").to_string_lossy());
 
     let z_res = h.run_cmd("z");
-    let pazi_res = h.run_cmd("pazi");
+    let pazi_res = h.run_cmd("pazi view");
 
     assert_eq!(z_res, pazi_res);
     assert!(z_res.contains(&root.join("1/tmp").to_string_lossy().to_string()));

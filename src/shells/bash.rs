@@ -21,7 +21,7 @@ case \$PROMPT_COMMAND in
 esac
 
 pazi_cd() {
-    if [ "$#" -eq 0 ]; then pazi; return $?; fi
+    if [ "$#" -eq 0 ]; then pazi view; return $?; fi
     local res; "#, /* note: this is declared separately because 'local' clobbers pazi's return
     code, see https://lists.gnu.org/archive/html/bug-bash/2010-03/msg00007.html */
             r#"

@@ -51,6 +51,7 @@ enum PaziSubcommand {
     Import,
     Init,
     Jump,
+    View,
     Visit,
 }
 
@@ -60,6 +61,7 @@ impl PaziSubcommand {
             PaziSubcommand::Import => "import",
             PaziSubcommand::Init => "init",
             PaziSubcommand::Jump => "jump",
+            PaziSubcommand::View => "view",
             PaziSubcommand::Visit => "visit",
         }
     }
@@ -106,6 +108,15 @@ fn _main() -> PaziResult {
                         .short("i"),
                 )
                 .arg(Arg::with_name("dir_target"))
+        )
+        .subcommand(
+            SubCommand::with_name(PaziSubcommand::View.as_str())
+                .setting(AppSettings::DisableHelpSubcommand)
+                .about("View the frecency database")
+                .arg(
+                    Arg::with_name("dir_target")
+                        .help("filter matches down further")
+                )
         )
         .subcommand(
             SubCommand::with_name(PaziSubcommand::Visit.as_str())
@@ -182,11 +193,14 @@ fn _main() -> PaziResult {
         (name, Some(jump)) if name == PaziSubcommand::Jump.as_str() => {
             return handle_jump(jump);
         }
+        (name, Some(view)) if name == PaziSubcommand::View.as_str() => {
+            return handle_print_frecency(view);
+        }
         (name, Some(visit)) if name == PaziSubcommand::Visit.as_str() => {
             return handle_visit(visit);
         }
-        _ => {
-            debug!("unrecognized subcommand: not an error for backwards compatibility")
+        unknown => {
+            debug!("unrecognized subcommand: not an error for backwards compatibility: {:?}", unknown)
         }
     };
 
@@ -420,6 +434,39 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
             return PaziResult::Error;
         }
     }
+}
+
+fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    let matches = match cmd.value_of("dir_target") {
+        Some(to) => {
+            env::current_dir()
+                .map(|cwd| {
+                    frecency.maybe_add_relative_to(cwd, to);
+                })
+            .unwrap_or(()); // truly ignore failure to get cwd
+            frecency.directory_matches(to)
+        }
+        None => frecency.items_with_frecency(),
+    };
+
+
+    for el in matches {
+        // precision for floats only handles the floating part, which leads to unaligned
+        // output, e.g., for a precision value of '3', you might get:
+        // 1.000
+        // 100.000
+        //
+        // By converting it to a string first, and then truncating it, we can get nice prettily
+        // aligned strings.
+        // Note: the string's precision should be at least as long as the printed precision so
+        // there are enough characters.
+        let str_val = format!("{:.5}", (el.1 * 100f64));
+        println!("{:.5}\t{}", str_val, el.0);
+    }
+
+    PaziResult::Success
 }
 
 fn intercept_ctrl_c() -> Result<(),()> {
