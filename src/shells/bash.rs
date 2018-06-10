@@ -10,7 +10,7 @@ impl Shell for Bash {
 __pazi_add_dir() {
     # TODO: should pazi keep track of this itself in its datadir?
     if [[ "${__PAZI_LAST_PWD}" != "${PWD}" ]]; then
-        pazi --add-dir "${PWD}"
+        pazi visit "${PWD}"
     fi
     __PAZI_LAST_PWD="${PWD}"
 }
@@ -27,7 +27,7 @@ pazi_cd() {
             r#"
     res="$("#,
             PAZI_EXTENDED_EXIT_CODES_ENV!(),
-            r#"=1 pazi --dir "$@")"
+            r#"=1 pazi jump "$@")"
     local ret=$?
     case $ret in
     "#,
