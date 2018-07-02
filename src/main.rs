@@ -27,7 +27,7 @@ mod shells;
 use std::env;
 
 use pazi_result::*;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgMatches, ArgGroup, SubCommand, AppSettings};
 use frecent_paths::PathFrecency;
 use shells::SUPPORTED_SHELLS;
 
@@ -47,6 +47,17 @@ fn main() {
     }
 }
 
+// SUBCOMMAND is a macro-enum of all subcommands.
+// This should be replaced by a normal enum + const "as_str" for each variant once rust stable
+// supports const functions.
+macro_rules! SUBCOMMAND {
+    (Import) => { "import" };
+    (Init) => { "init" };
+    (Jump) => { "jump" };
+    (View) => { "view" };
+    (Visit) => { "visit" };
+}
+
 fn _main() -> PaziResult {
     let flags = App::new("pazi")
         .about("A fast autojump tool")
@@ -59,8 +70,8 @@ fn _main() -> PaziResult {
                 .env("PAZI_DEBUG"),
         )
         .subcommand(
-            SubCommand::with_name("init")
-                .about("Prints intialization logic for the given shell to eval")
+            SubCommand::with_name(SUBCOMMAND!(Init))
+                .about("Prints initialization logic for the given shell to eval")
                 .usage(format!("pazi init [ {} ]", SUPPORTED_SHELLS.join(" | ")).as_str())
                 .arg(Arg::with_name("shell").help(&format!(
                     "the shell to print initialization code for: one of {}",
@@ -68,19 +79,54 @@ fn _main() -> PaziResult {
                 ))),
         )
         .subcommand(
-            SubCommand::with_name("import")
+            SubCommand::with_name(SUBCOMMAND!(Import))
                 .about("Import from another autojump program")
                 .usage("pazi import fasd")
                 .arg(Arg::with_name("autojumper").help(&format!(
                     "the other autojump program to import from, only fasd is currently supported",
                 ))),
         )
+        .subcommand(
+            SubCommand::with_name(SUBCOMMAND!(Jump))
+                // used by the shell alias internally, it shouldn't be called directly
+                .setting(AppSettings::Hidden)
+                .setting(AppSettings::DisableHelpSubcommand)
+                .about("Select a directory to jump to")
+                .arg(
+                    Arg::with_name("interactive")
+                        .help("interactively search directory matches")
+                        .long("interactive")
+                        .short("i"),
+                )
+                .arg(Arg::with_name("dir_target"))
+        )
+        .subcommand(
+            SubCommand::with_name(SUBCOMMAND!(View))
+                .setting(AppSettings::DisableHelpSubcommand)
+                .about("View the frecency database")
+                .arg(
+                    Arg::with_name("dir_target")
+                        .help("filter matches down further")
+                )
+        )
+        .subcommand(
+            SubCommand::with_name(SUBCOMMAND!(Visit))
+                // used by the shell hooks internally, it shouldn't be called directly
+                .setting(AppSettings::Hidden)
+                .setting(AppSettings::DisableHelpSubcommand)
+                .about("Add or visit a directory in the frecency database")
+                .arg(Arg::with_name("dir_target"))
+        )
+        // Deprecated in favor of .PaziSubcommand::Jump
+        // left temporarily for backwards compatibility
+        // Remove before 1.0
         .arg(
             Arg::with_name("dir")
                 .help(
                     "print a directory matching a pattern; should be used via the 'z' function \
                      'init' creates",
                 )
+                .hidden(true)
                 .long("dir")
                 .short("d"),
         )
@@ -90,13 +136,19 @@ fn _main() -> PaziResult {
                 .long("interactive")
                 .short("i"),
         )
+        // Deprecated in favor of .PaziSubcommand::Visit
+        // left temporarily for backwards compatibility
+        // Remove before 1.0
         .arg(
             Arg::with_name("add-dir")
                 .help("add a directory to the frecency index")
+                .hidden(true)
                 .long("add-dir")
                 .takes_value(true)
                 .value_name("directory"),
         )
+        // Deprecated per above deprecations
+        // Remove before 1.0
         // Note: dir_target is a positional argument since it is desirable that both of the
         // following work:
         //
@@ -105,28 +157,9 @@ fn _main() -> PaziResult {
         // 
         // A positional argument was the only way I could figure out to do that without writing
         // more shell in init.
-        .arg(Arg::with_name("dir_target"))
+        .arg(Arg::with_name("dir_target").hidden(true))
         .group(ArgGroup::with_name("operation").args(&["dir", "add-dir"]))
         .get_matches();
-
-    if let Some(init_matches) = flags.subcommand_matches("init") {
-        match init_matches.value_of("shell") {
-            Some(s) => match shells::from_name(s) {
-                Some(s) => {
-                    println!("{}", s.pazi_init());
-                    return PaziResult::Success;
-                }
-                None => {
-                    println!("{}\n\nUnsupported shell: {}", init_matches.usage(), s);
-                    return PaziResult::Error;
-                }
-            },
-            None => {
-                println!("{}\n\ninit requires an argument", init_matches.usage());
-                return PaziResult::Error;
-            }
-        }
-    }
 
     if flags.is_present("debug") {
         env_logger::LogBuilder::new()
@@ -141,6 +174,30 @@ fn _main() -> PaziResult {
         }
     }
 
+    match flags.subcommand() {
+        (SUBCOMMAND!(Import), Some(import)) => {
+            return handle_import(import);
+        }
+        (SUBCOMMAND!(Init), Some(init)) => {
+            return handle_init(init);
+        }
+        (SUBCOMMAND!(Jump), Some(jump)) => {
+            return handle_jump(jump);
+        }
+        (SUBCOMMAND!(View), Some(view)) => {
+            return handle_print_frecency(view);
+        }
+        (SUBCOMMAND!(Visit), Some(visit)) => {
+            return handle_visit(visit);
+        }
+        unknown => {
+            debug!("unrecognized subcommand: not an error for backwards compatibility: {:?}", unknown)
+        }
+    };
+
+
+    // the remainder of this fn is backwards compatibility code, all of this should vanish before
+    // 1.0
     let xdg_dirs =
         xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
 
@@ -149,42 +206,6 @@ fn _main() -> PaziResult {
         .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
 
     let mut frecency = PathFrecency::load(&frecency_path);
-
-    if let Some(import_matches) = flags.subcommand_matches("import") {
-        match import_matches.value_of("autojumper") {
-            Some("fasd") => match importers::Fasd::import(&mut frecency) {
-                Ok(stats) => match frecency.save_to_disk() {
-                    Ok(_) => {
-                        println!(
-                            "imported {} items from fasd (out of {} in its db)",
-                            stats.items_visited, stats.items_considered
-                        );
-                        return PaziResult::Success;
-                    }
-                    Err(e) => {
-                        println!("pazi: error adding directory: {}", e);
-                        return PaziResult::Error;
-                    }
-                },
-                Err(e) => {
-                    println!("pazi: error importing from fasd: {}", e);
-                    return PaziResult::Error;
-                }
-            },
-            Some(s) => {
-                println!(
-                    "{}\n\nUnsupported import target: {}",
-                    import_matches.usage(),
-                    s
-                );
-                return PaziResult::Error;
-            }
-            None => {
-                println!("{}\n\nimport requires an argument", import_matches.usage());
-                return PaziResult::Error;
-            }
-        }
-    }
 
     let res;
     if let Some(dir) = flags.value_of("add-dir") {
@@ -260,6 +281,178 @@ fn _main() -> PaziResult {
         return PaziResult::Error;
     }
     res
+}
+
+fn load_frecency() -> PathFrecency {
+    let xdg_dirs =
+        xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
+
+    let frecency_path = xdg_dirs
+        .place_config_file(PAZI_DB_NAME)
+        .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
+
+    PathFrecency::load(&frecency_path)
+}
+
+
+fn handle_init(cmd: &ArgMatches) -> PaziResult {
+    match cmd.value_of("shell") {
+        Some(s) => match shells::from_name(s) {
+            Some(s) => {
+                println!("{}", s.pazi_init());
+                return PaziResult::Success;
+            }
+            None => {
+                println!("{}\n\nUnsupported shell: {}", cmd.usage(), s);
+                return PaziResult::Error;
+            }
+        },
+        None => {
+            println!("{}\n\ninit requires an argument", cmd.usage());
+            return PaziResult::Error;
+        }
+    }
+}
+
+fn handle_import(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    let stats = match cmd.value_of("autojumper") {
+        Some("fasd") => match importers::Fasd::import(&mut frecency) {
+            Ok(stats) => stats,
+            Err(e) => {
+                println!("error importing: {}", e);
+                return PaziResult::Error;
+            }
+        }
+        Some(s) => {
+            println!(
+                "{}\n\nUnsupported import target: {}",
+                cmd.usage(),
+                s
+            );
+            return PaziResult::Error;
+        }
+        None => {
+            println!("{}\n\nimport requires an argument", cmd.usage());
+            return PaziResult::Error;
+        }
+    };
+
+    match frecency.save_to_disk() {
+        Ok(_) => {
+            println!(
+                "imported {} items from fasd (out of {} in its db)",
+                stats.items_visited, stats.items_considered
+            );
+            PaziResult::Success
+        }
+        Err(e) => {
+            println!("pazi: error adding directory: {}", e);
+            PaziResult::Error
+        }
+    }
+}
+
+fn handle_jump(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+    let res;
+
+    { // once non-lexical-lifetimes hits stable, remove these braces
+        let mut matches = match cmd.value_of("dir_target") {
+            Some(to) => {
+                env::current_dir()
+                    .map(|cwd| {
+                        frecency.maybe_add_relative_to(cwd, to);
+                    })
+                .unwrap_or(()); // truly ignore failure to get cwd
+                frecency.directory_matches(to)
+            }
+            None => frecency.items_with_frecency(),
+        };
+
+        res = if cmd.is_present("interactive") {
+            let stdout = termion::get_tty().unwrap();
+            match interactive::filter(matches, std::io::stdin(), stdout) {
+                Ok(el) => {
+                    print!("{}", el);
+                    PaziResult::SuccessDirectory
+                }
+                Err(interactive::FilterError::NoSelection) => {
+                    // early return since no selection arbitrarily implies not trimming non-existent
+                    // paths. The early return skips the save_to_disk below
+                    return PaziResult::ErrorNoInput;
+                }
+                Err(e) => {
+                    println!("{}", e);
+                    return PaziResult::Error;
+                }
+            }
+        } else if let Some((path, _)) = matches.next() {
+            print!("{}", path);
+            PaziResult::SuccessDirectory
+        } else {
+            PaziResult::Error
+        };
+    };
+
+    if let Err(e) = frecency.save_to_disk() {
+        // leading newline in case it was after a 'print' above
+        println!("\npazi: error saving db changes: {}", e);
+        return PaziResult::Error;
+    }
+    res
+}
+
+fn handle_visit(cmd: &ArgMatches) -> PaziResult {
+    let dir = match cmd.value_of("dir_target") {
+        Some(dir) => dir,
+        None => {
+            println!("visit: visit requires a directory target to visit");
+            return PaziResult::Error;
+        }
+    };
+
+    let mut frecency = load_frecency();
+    frecency.visit(dir.to_string());
+
+    match frecency.save_to_disk() {
+        Ok(_) => {
+            return PaziResult::Success;
+        }
+        Err(e) => {
+            println!("pazi: error adding directory: {}", e);
+            return PaziResult::Error;
+        }
+    }
+}
+
+fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    let matches = match cmd.value_of("dir_target") {
+        Some(to) => {
+            frecency.directory_matches(to)
+        }
+        None => frecency.items_with_frecency(),
+    };
+
+
+    for el in matches {
+        // precision for floats only handles the floating part, which leads to unaligned
+        // output, e.g., for a precision value of '3', you might get:
+        // 1.000
+        // 100.000
+        //
+        // By converting it to a string first, and then truncating it, we can get nice prettily
+        // aligned strings.
+        // Note: the string's precision should be at least as long as the printed precision so
+        // there are enough characters.
+        let str_val = format!("{:.5}", (el.1 * 100f64));
+        println!("{:.5}\t{}", str_val, el.0);
+    }
+
+    PaziResult::Success
 }
 
 fn intercept_ctrl_c() -> Result<(),()> {

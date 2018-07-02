@@ -7,18 +7,18 @@ impl Shell for Zsh {
         concat!(
             r#"
 __pazi_add_dir() {
-    pazi --add-dir "${PWD}"
+    pazi visit "${PWD}"
 }
 
 autoload -Uz add-zsh-hook
 add-zsh-hook chpwd __pazi_add_dir
 
 pazi_cd() {
-    if [ "$#" -eq 0 ]; then pazi; return $?; fi
+    if [ "$#" -eq 0 ]; then pazi view; return $?; fi
     local res
     res="$("#,
             PAZI_EXTENDED_EXIT_CODES_ENV!(),
-            r#"=1 pazi --dir "$@")"
+            r#"=1 pazi jump "$@")"
     local ret=$?
     case $ret in
     "#,

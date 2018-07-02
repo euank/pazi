@@ -4,6 +4,7 @@ extern crate tempdir;
 use integ::pazi::shells::SUPPORTED_SHELLS;
 use tempdir::TempDir;
 use harness::{Fasd, HarnessBuilder, Pazi, Shell};
+use std::collections::HashMap;
 use std::time::Duration;
 use std::thread::sleep;
 
@@ -167,7 +168,7 @@ fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
     h.visit_dir(&root.join("2/tmp").to_string_lossy());
 
     let z_res = h.run_cmd("z");
-    let pazi_res = h.run_cmd("pazi");
+    let pazi_res = h.run_cmd("pazi view");
 
     assert_eq!(z_res, pazi_res);
     assert!(z_res.contains(&root.join("1/tmp").to_string_lossy().to_string()));
@@ -206,28 +207,46 @@ fn it_handles_help_output_shell(shell: &Shell) {
     let help1 = h.run_cmd("pazi --help && echo $?");
     let help2 = h.run_cmd("z -h && echo $?");
     let help3 = h.run_cmd("z --help && echo $?");
-    assert_eq!(help1, help2);
-    assert_eq!(help2, help3);
+    assert!(help1.contains("USAGE:"), help1);
+    assert!(help2.contains("USAGE:"), help2);
     assert!(help1.ends_with("\n0"));
+    assert!(help2.ends_with("\n0"));
+
+    assert_eq!(help2, help3);
 }
 
 // Test for https://github.com/euank/pazi/issues/60
+// and https://github.com/euank/pazi/issues/70
 #[test]
-fn it_handles_things_that_look_sorta_like_init_but_not_really() {
+fn it_handles_things_that_look_like_subcommands() {
     for shell in SUPPORTED_SHELLS.iter() {
         let s = Shell::from_str(shell);
-        it_handles_things_that_look_sorta_etc_shell(&s);
+        it_handles_things_that_look_like_subcommands_shell(&s);
     }
 }
 
-fn it_handles_things_that_look_sorta_etc_shell(shell: &Shell) {
+fn it_handles_things_that_look_like_subcommands_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
-    let igni = root.join("ignition").into_os_string().into_string().unwrap();
 
-    h.create_dir(&igni);
-    h.visit_dir(&igni);
-    h.visit_dir(&root.to_string_lossy());
-    assert_eq!(h.jump("igni"), igni);
+    // map of <DirectoryName, JumpTarget>
+    // Each will be tested that given a frecent directory of that name, a jump of the given target
+    // will end up there correctly.
+    let map: HashMap<_, _> = vec![
+        ("ignition", "igni"),
+        ("igni", "igni"),
+        ("initialize", "init"),
+        ("--help", "help"),
+        ("import", "import"),
+    ].into_iter().collect();
+
+    for (dir, jump) in map {
+        let dirname = root.join(dir).into_os_string().into_string().unwrap();
+        h.create_dir(&dirname);
+        h.visit_dir(&dirname);
+        h.visit_dir(&root.to_string_lossy());
+        assert_eq!(h.jump(jump), dirname);
+        h.delete_dir(&dirname);
+    }
 }

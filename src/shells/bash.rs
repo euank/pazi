@@ -10,7 +10,7 @@ impl Shell for Bash {
 __pazi_add_dir() {
     # TODO: should pazi keep track of this itself in its datadir?
     if [[ "${__PAZI_LAST_PWD}" != "${PWD}" ]]; then
-        pazi --add-dir "${PWD}"
+        pazi visit "${PWD}"
     fi
     __PAZI_LAST_PWD="${PWD}"
 }
@@ -21,13 +21,13 @@ case \$PROMPT_COMMAND in
 esac
 
 pazi_cd() {
-    if [ "$#" -eq 0 ]; then pazi; return $?; fi
+    if [ "$#" -eq 0 ]; then pazi view; return $?; fi
     local res; "#, /* note: this is declared separately because 'local' clobbers pazi's return
     code, see https://lists.gnu.org/archive/html/bug-bash/2010-03/msg00007.html */
             r#"
     res="$("#,
             PAZI_EXTENDED_EXIT_CODES_ENV!(),
-            r#"=1 pazi --dir "$@")"
+            r#"=1 pazi jump "$@")"
     local ret=$?
     case $ret in
     "#,
