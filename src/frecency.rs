@@ -93,6 +93,7 @@ where
         }
     }
 
+    #[cfg(test)]
     fn items(&self) -> Vec<&T> {
         self.items_with_frecency().iter().map(|&(k, _)| k).collect()
     }
