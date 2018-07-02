@@ -47,24 +47,15 @@ fn main() {
     }
 }
 
-enum PaziSubcommand {
-    Import,
-    Init,
-    Jump,
-    View,
-    Visit,
-}
-
-impl PaziSubcommand {
-    fn as_str(&self) -> &'static str {
-        match self {
-            PaziSubcommand::Import => "import",
-            PaziSubcommand::Init => "init",
-            PaziSubcommand::Jump => "jump",
-            PaziSubcommand::View => "view",
-            PaziSubcommand::Visit => "visit",
-        }
-    }
+// SUBCOMMAND is a macro-enum of all subcommands.
+// This should be replaced by a normal enum + const "as_str" for each variant once rust stable
+// supports const functions.
+macro_rules! SUBCOMMAND {
+    (Import) => { "import" };
+    (Init) => { "init" };
+    (Jump) => { "jump" };
+    (View) => { "view" };
+    (Visit) => { "visit" };
 }
 
 fn _main() -> PaziResult {
@@ -79,7 +70,7 @@ fn _main() -> PaziResult {
                 .env("PAZI_DEBUG"),
         )
         .subcommand(
-            SubCommand::with_name(PaziSubcommand::Init.as_str())
+            SubCommand::with_name(SUBCOMMAND!(Init))
                 .about("Prints initialization logic for the given shell to eval")
                 .usage(format!("pazi init [ {} ]", SUPPORTED_SHELLS.join(" | ")).as_str())
                 .arg(Arg::with_name("shell").help(&format!(
@@ -88,7 +79,7 @@ fn _main() -> PaziResult {
                 ))),
         )
         .subcommand(
-            SubCommand::with_name(PaziSubcommand::Import.as_str())
+            SubCommand::with_name(SUBCOMMAND!(Import))
                 .about("Import from another autojump program")
                 .usage("pazi import fasd")
                 .arg(Arg::with_name("autojumper").help(&format!(
@@ -96,7 +87,7 @@ fn _main() -> PaziResult {
                 ))),
         )
         .subcommand(
-            SubCommand::with_name(PaziSubcommand::Jump.as_str())
+            SubCommand::with_name(SUBCOMMAND!(Jump))
                 // used by the shell alias internally, it shouldn't be called directly
                 .setting(AppSettings::Hidden)
                 .setting(AppSettings::DisableHelpSubcommand)
@@ -110,7 +101,7 @@ fn _main() -> PaziResult {
                 .arg(Arg::with_name("dir_target"))
         )
         .subcommand(
-            SubCommand::with_name(PaziSubcommand::View.as_str())
+            SubCommand::with_name(SUBCOMMAND!(View))
                 .setting(AppSettings::DisableHelpSubcommand)
                 .about("View the frecency database")
                 .arg(
@@ -119,7 +110,7 @@ fn _main() -> PaziResult {
                 )
         )
         .subcommand(
-            SubCommand::with_name(PaziSubcommand::Visit.as_str())
+            SubCommand::with_name(SUBCOMMAND!(Visit))
                 // used by the shell hooks internally, it shouldn't be called directly
                 .setting(AppSettings::Hidden)
                 .setting(AppSettings::DisableHelpSubcommand)
@@ -182,21 +173,20 @@ fn _main() -> PaziResult {
         }
     }
 
-
     match flags.subcommand() {
-        (name, Some(import)) if name == PaziSubcommand::Import.as_str() => {
+        (SUBCOMMAND!(Import), Some(import)) => {
             return handle_import(import);
         }
-        (name, Some(init)) if name == PaziSubcommand::Init.as_str() => {
+        (SUBCOMMAND!(Init), Some(init)) => {
             return handle_init(init);
         }
-        (name, Some(jump)) if name == PaziSubcommand::Jump.as_str() => {
+        (SUBCOMMAND!(Jump), Some(jump)) => {
             return handle_jump(jump);
         }
-        (name, Some(view)) if name == PaziSubcommand::View.as_str() => {
+        (SUBCOMMAND!(View), Some(view)) => {
             return handle_print_frecency(view);
         }
-        (name, Some(visit)) if name == PaziSubcommand::Visit.as_str() => {
+        (SUBCOMMAND!(Visit), Some(visit)) => {
             return handle_visit(visit);
         }
         unknown => {
