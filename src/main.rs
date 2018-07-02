@@ -142,6 +142,7 @@ fn _main() -> PaziResult {
         .arg(
             Arg::with_name("add-dir")
                 .help("add a directory to the frecency index")
+                .hidden(true)
                 .long("add-dir")
                 .takes_value(true)
                 .value_name("directory"),
@@ -156,7 +157,7 @@ fn _main() -> PaziResult {
         // 
         // A positional argument was the only way I could figure out to do that without writing
         // more shell in init.
-        .arg(Arg::with_name("dir_target"))
+        .arg(Arg::with_name("dir_target").hidden(true))
         .group(ArgGroup::with_name("operation").args(&["dir", "add-dir"]))
         .get_matches();
 
