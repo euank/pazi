@@ -132,11 +132,11 @@ pub fn serialize(matches: &Vec<(String, f64)>) -> String {
 pub fn deserialize(s: &str) -> Result<HashMap<String, f64>, String> {
     let mut res = HashMap::new();
     for mut line in s.lines() {
+        line = line.trim();
+
         if line.len() == 0 || line.starts_with('#') {
             continue;
         }
-
-        line = line.trim_right();
 
         let parts: Vec<&str> = line.splitn(2, char::is_whitespace).collect();
 
