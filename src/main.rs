@@ -55,12 +55,24 @@ fn main() {
 // This should be replaced by a normal enum + const "as_str" for each variant once rust stable
 // supports const functions.
 macro_rules! SUBCOMMAND {
-    (Edit) => { "edit" };
-    (Import) => { "import" };
-    (Init) => { "init" };
-    (Jump) => { "jump" };
-    (View) => { "view" };
-    (Visit) => { "visit" };
+    (Edit) => {
+        "edit"
+    };
+    (Import) => {
+        "import"
+    };
+    (Init) => {
+        "init"
+    };
+    (Jump) => {
+        "jump"
+    };
+    (View) => {
+        "view"
+    };
+    (Visit) => {
+        "visit"
+    };
 }
 
 fn _main() -> PaziResult {
@@ -475,9 +487,7 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
     let mut frecency = load_frecency();
 
     let matches = match cmd.value_of("dir_target") {
-        Some(to) => {
-            frecency.directory_matches(to)
-        }
+        Some(to) => frecency.directory_matches(to),
         None => frecency.items_with_frecency(),
     };
 
