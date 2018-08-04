@@ -1,16 +1,17 @@
-use termion::screen::AlternateScreen;
-use std::io::{Stdin, Write};
-use termion::{clear, cursor};
-use std::io::Error as IOErr;
-use std::fmt;
-use std::convert::From;
-use std::fs;
-use std::thread;
-use chan_signal;
 use chan;
+use chan_signal;
+use std::convert::From;
+use std::fmt;
+use std::fs;
+use std::io::Error as IOErr;
+use std::io::{Stdin, Write};
+use std::thread;
+use termion::screen::AlternateScreen;
+use termion::{clear, cursor};
 
 pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String, FilterError>
-    where I: Iterator<Item = (String, f64)>
+where
+    I: Iterator<Item = (String, f64)>,
 {
     // So, this is a massive abstraction leak, but unix signals are icky so it's not really
     // surprising.

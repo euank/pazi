@@ -1,9 +1,9 @@
-use std::env;
 use frecent_paths::PathFrecency;
-use std::path::{Path, PathBuf};
+use std::env;
 use std::fs;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::path::{Path, PathBuf};
 pub struct Fasd;
 
 pub struct ImportStats {

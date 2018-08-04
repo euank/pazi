@@ -2,21 +2,36 @@
 // It does things like the messyness of checking for a directory's existence and such.
 
 use frecency::{descending_frecency, Frecency};
-use std::path::{Path, PathBuf};
+use libc;
+use matcher::*;
+use rmp_serde;
+use serde;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
-use serde::Serialize;
-use serde;
-use libc;
-use rmp_serde;
-use matcher::*;
 
+#[derive(Clone)]
 pub struct PathFrecency {
     frecency: Frecency<String>,
     // whether the frecency file is 'dirty' and should be updated on save
     dirty: bool,
     path: PathBuf,
+}
+
+pub struct PathFrecencyDiff {
+    additions: Vec<(String, f64)>,
+    removals: Vec<String>,
+}
+
+impl PathFrecencyDiff {
+    pub fn new(additions: Vec<(String, f64)>, removals: Vec<String>) -> Self {
+        Self {
+            additions: additions,
+            removals: removals,
+        }
+    }
 }
 
 impl PathFrecency {
@@ -68,6 +83,25 @@ impl PathFrecency {
         }
     }
 
+    pub fn apply_diff(&mut self, diff: PathFrecencyDiff) -> Result<(), String> {
+        for removal in diff.removals {
+            match self.frecency.remove(&removal) {
+                Some(_) => {}
+                None => {
+                    return Err(format!("no such item to remove: {}", removal));
+                }
+            }
+            self.dirty = true;
+        }
+
+        for addition in diff.additions {
+            self.frecency.overwrite(addition.0, addition.1);
+            self.dirty = true;
+        }
+
+        Ok(())
+    }
+
     pub fn save_to_disk(&self) -> Result<(), String> {
         if !self.dirty {
             // No need to save, nothing's changed
@@ -79,12 +113,14 @@ impl PathFrecency {
             return Err("could not get pid".to_string());
         }
 
-        let fname = self.path
+        let fname = self
+            .path
             .file_name()
             .ok_or("path did not have file component".to_string())?;
 
         let tmpfile_name = format!(".{}.{}", fname.to_string_lossy(), my_pid);
-        let tmpfile_dir = self.path
+        let tmpfile_dir = self
+            .path
             .parent()
             .ok_or("unable to get parent".to_string())?;
         let tmpfile_path = tmpfile_dir.join(tmpfile_name);
@@ -100,15 +136,44 @@ impl PathFrecency {
     }
 
     pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {
-        let items = self.frecency
-            .normalized_frecency()
+        let items = self
+            .frecency
+            .items()
+            .normalized()
             .into_iter()
             .map(|(p, f)| (p.to_owned(), f))
             .collect::<Vec<_>>();
         FrecentPathIter::new(self, items)
     }
 
+    pub fn items_with_frecency_raw<'a>(&'a mut self) -> FrecentPathIter<'a> {
+        let mut items = self
+            .frecency
+            .items()
+            .raw()
+            .into_iter()
+            .map(|(p, f)| (p.to_owned(), f))
+            .collect::<Vec<_>>();
+        items.sort_by(descending_frecency);
+        FrecentPathIter::new(self, items)
+    }
+
     pub fn directory_matches<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
+        self.directory_matches_impl(filter, true, |item, weight, match_weight| {
+            (item, match_weight * 0.8 + weight * 0.2)
+        })
+    }
+
+    pub fn directory_matches_raw<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
+        self.directory_matches_impl(filter, false, |item, weight, _| (item, weight))
+    }
+
+    fn directory_matches_impl<'a>(
+        &'a mut self,
+        filter: &str,
+        normalize: bool,
+        weight: fn(item: &String, frecency: f64, match_weight: f64) -> (&String, f64),
+    ) -> FrecentPathIter<'a> {
         // 'best directory' is a tricky concept, as is 'match.
         //
         // There's a continuum from "exact string match" to "no characters in common", and we
@@ -134,7 +199,6 @@ impl PathFrecency {
         // 6) Levenshtein distance may be fallen back upon for real "fuzzyness", but should be
         //    weighted carefully low; sometimes it is better to force a user to make a new query
         //    than to make too strange of a shot in the dark.
-
         let em = ExactMatcher {};
         let sm = SubstringMatcher {};
         let ci_em = CaseInsensitiveMatcher::new(&em);
@@ -143,15 +207,16 @@ impl PathFrecency {
         let pc_ci_em = PathComponentMatcher::new(&ci_em);
         let ci_sm = CaseInsensitiveMatcher::new(&sm);
         let pc_ci_sm = PathComponentMatcher::new(&ci_sm);
-        let matchers: Vec<&Matcher> = vec![&ExactMatcher {},
-                                           &ci_em,
-                                           &pc_em,
-                                           &pc_sm,
-                                           &pc_ci_em,
-                                           &SubstringMatcher {},
-                                           &ci_sm,
-                                           &pc_ci_sm];
-
+        let matchers: Vec<&Matcher> = vec![
+            &ExactMatcher {},
+            &ci_em,
+            &pc_em,
+            &pc_sm,
+            &pc_ci_em,
+            &SubstringMatcher {},
+            &ci_sm,
+            &pc_ci_sm,
+        ];
 
         let mut dedupe_map: HashMap<String, f64> = HashMap::new();
 
@@ -159,15 +224,17 @@ impl PathFrecency {
         // and the `if insert` block
         {
             // Run each matcher on each path
-            let items = self.frecency.normalized_frecency();
-            let matched = items.iter()
-                .flat_map(|item| {
-                    matchers.iter()
-                        .filter_map(move |m| {
-                            m.matches(item.0, filter)
-                                .map(|v| (item.0, v * 0.8 + item.1 * 0.2))
-                        })
-                });
+            let items = if normalize {
+                self.frecency.items().normalized()
+            } else {
+                self.frecency.items().raw()
+            };
+            let matched = items.iter().flat_map(|item| {
+                matchers.iter().filter_map(move |m| {
+                    m.matches(&item.0, filter)
+                        .map(move |v| weight(&item.0, item.1, v))
+                })
+            });
 
             // Remove dupe paths, keeping only each with the highest score
             for el in matched {
@@ -189,10 +256,14 @@ impl PathFrecency {
         let mut deduped: Vec<_> = dedupe_map.into_iter().collect();
         deduped.sort_by(descending_frecency);
 
-        debug!("{}",
-               deduped.iter()
-                   .fold("Matched paths:".to_string(),
-                         |acc, el| acc + &format!("\n{} with score {}", el.0, el.1)));
+        debug!(
+            "{}",
+            deduped
+                .iter()
+                .fold("Matched paths:".to_string(), |acc, el| {
+                    acc + &format!("\n{} with score {}", el.0, el.1)
+                })
+        );
 
         FrecentPathIter::new(self, deduped)
     }
@@ -208,7 +279,6 @@ impl PathFrecency {
         }
     }
 }
-
 
 /// An owning iterator over frecent paths
 /// which removes nonexistent directories from the database.

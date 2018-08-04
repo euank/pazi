@@ -1,10 +1,10 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::f64;
+use std::fmt;
 use std::hash::Hash;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::fmt;
 
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);
 
@@ -17,6 +17,16 @@ where
     // is a much more frequent operation than searching through items for this program.
     frecency: HashMap<T, f64>,
     max_size: usize,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FrecencyView<'a, T, I>
+where
+    T: Hash + Eq + Ord + Clone,
+    T: 'a,
+    I: IntoIterator<Item = (&'a T, &'a f64)>,
+{
+    items: I,
 }
 
 impl<T> Frecency<T>
@@ -62,6 +72,10 @@ where
         self.insert_with_time(key, SystemTime::now())
     }
 
+    pub fn overwrite(&mut self, key: T, value: f64) {
+        self.frecency.insert(key, value);
+    }
+
     fn insert_with_time(&mut self, key: T, now: SystemTime) {
         if !self.frecency.contains_key(&key) {
             self.visit_with_time(key, now)
@@ -93,32 +107,36 @@ where
         }
     }
 
-    #[cfg(test)]
-    fn items(&self) -> Vec<&T> {
-        self.items_with_frecency().iter().map(|&(k, _)| k).collect()
-    }
-
-    pub fn items_with_frecency(&self) -> Vec<(&T, f64)> {
-        let mut v = self.frecency
-            .iter()
-            .map(|(ref t, f)| (*t, f.clone()))
-            .collect::<Vec<_>>();
-        v.sort_by(descending_frecency);
-        v
+    pub fn items(&self) -> FrecencyView<T, &HashMap<T, f64>> {
+        FrecencyView {
+            items: &self.frecency,
+        }
     }
 
     pub fn remove(&mut self, key: &T) -> Option<f64> {
         self.frecency.remove(key)
     }
+}
 
-    pub fn normalized_frecency(&self) -> Vec<(&T, f64)> {
-        let items = self.items_with_frecency();
+impl<'a, T, I> FrecencyView<'a, T, I>
+where
+    T: Hash + Eq + Ord + Clone,
+    T: 'a,
+    I: IntoIterator<Item = (&'a T, &'a f64)>,
+{
+    pub fn normalized(self) -> Vec<(&'a T, f64)> {
+        let mut items: Vec<_> = self
+            .items
+            .into_iter()
+            .map(|(k, v)| (k, v.clone()))
+            .collect();
         if items.len() == 0 {
-            return items;
+            return Vec::new();
         }
+        items.sort_by(descending_frecency);
         let min = items[items.len() - 1].1;
         let max = items[0].1;
-        let mut items: Vec<_> = items
+        items
             .into_iter()
             .map(|(s, v)| {
                 let normalized = (v - min) / (max - min);
@@ -128,9 +146,14 @@ where
                     (s, normalized)
                 }
             })
-            .collect();
-        items.sort_by(descending_frecency);
-        items
+            .collect()
+    }
+
+    pub fn raw(self) -> Vec<(&'a T, f64)> {
+        self.items
+            .into_iter()
+            .map(|(k, v)| (k, v.clone()))
+            .collect()
     }
 }
 
@@ -143,41 +166,49 @@ pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
 
 #[cfg(test)]
 mod test {
-    use super::Frecency;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use super::{Frecency, FrecencyView};
+    use std;
+    use std::hash::Hash;
     use std::time;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn timef(u: u64) -> SystemTime {
         UNIX_EPOCH + time::Duration::from_secs(u)
     }
 
+    fn keys<'a, T, I>(f: FrecencyView<'a, T, I>) -> Vec<T>
+    where
+        I: IntoIterator<Item = (&'a T, &'a f64)>,
+        T: 'a,
+        T: Ord + Clone + Hash + std::fmt::Debug,
+    {
+        f.normalized().into_iter().map(|(k, _)| k.clone()).collect()
+    }
+
     #[test]
     fn basic_frecency_test() {
-        let mut f = Frecency::<String>::new(100);
-        f.visit_with_time("foo".to_string(), timef(10));
-        f.visit_with_time("bar".to_string(), timef(20));
-        f.visit_with_time("foo".to_string(), timef(50));
-        f.insert_with_time("quux".to_string(), timef(70));
-        assert_eq!(
-            f.items(),
-            vec![&"foo".to_string(), &"quux".to_string(), &"bar".to_string()]
-        );
+        let mut f = Frecency::<&str>::new(100);
+        f.visit_with_time("foo", timef(10));
+        f.visit_with_time("bar", timef(20));
+        f.visit_with_time("foo", timef(50));
+        f.insert_with_time("quux", timef(70));
+        assert_eq!(keys(f.items()), vec!["foo", "quux", "bar"]);
         let f_clone = f.clone();
-        f.insert_with_time("quux".to_string(), timef(77));
-        assert_eq!(f_clone.items_with_frecency(), f.items_with_frecency());
+        f.insert_with_time("quux", timef(77));
+        assert_eq!(f_clone.items(), f.items());
     }
 
     #[test]
     fn trims_min() {
         let mut f = Frecency::<&str>::new(2);
         f.visit_with_time("foo", timef(10));
-        assert_eq!(f.items().len(), 1);
+        assert_eq!(f.items().normalized().len(), 1);
         f.visit_with_time("bar", timef(10));
         f.visit_with_time("bar", timef(10));
         f.visit_with_time("bar", timef(20));
-        assert_eq!(f.items().clone(), vec![&"bar", &"foo"]);
+        assert_eq!(keys(f.items()), vec!["bar", "foo"]);
         f.visit_with_time("baz", timef(30));
-        assert_eq!(f.items().clone(), vec![&"bar", &"baz"]);
+        assert_eq!(keys(f.items()), vec!["bar", "baz"]);
     }
 
     #[test]
@@ -190,6 +221,6 @@ mod test {
         f.visit_with_time("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60));
         f.visit_with_time("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60));
         f.visit_with_time("bar", now);
-        assert_eq!(f.items().clone(), vec![&"bar", &"foo"]);
+        assert_eq!(keys(f.items()), vec!["bar", "foo"]);
     }
 }

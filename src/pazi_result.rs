@@ -8,15 +8,23 @@
 macro_rules! PAZI_EXTENDED_EXIT_CODES_ENV {
     () => {
         "__PAZI_EXTENDED_EXITCODES"
-    }
+    };
 }
 
 // Arbitrarily chosen exit codes
 macro_rules! EXIT_CODE {
-    (SUCCESS) => { 90 };
-    (SUCCESS_DIR) => { 91 };
-    (ERROR) => { 92 };
-    (ERROR_NO_INPUT) => { 93 };
+    (SUCCESS) => {
+        90
+    };
+    (SUCCESS_DIR) => {
+        91
+    };
+    (ERROR) => {
+        92
+    };
+    (ERROR_NO_INPUT) => {
+        93
+    };
 }
 
 pub enum PaziResult {

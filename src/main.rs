@@ -11,24 +11,28 @@ extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate snailquote;
+extern crate tempfile;
 extern crate termion;
+extern crate which;
 extern crate xdg;
 
 #[macro_use]
 mod pazi_result;
 
-mod importers;
-mod matcher;
+mod edit;
 mod frecency;
 mod frecent_paths;
+mod importers;
 mod interactive;
+mod matcher;
 mod shells;
 
 use std::env;
 
-use pazi_result::*;
-use clap::{App, Arg, ArgMatches, ArgGroup, SubCommand, AppSettings};
+use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 use frecent_paths::PathFrecency;
+use pazi_result::*;
 use shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
@@ -51,11 +55,24 @@ fn main() {
 // This should be replaced by a normal enum + const "as_str" for each variant once rust stable
 // supports const functions.
 macro_rules! SUBCOMMAND {
-    (Import) => { "import" };
-    (Init) => { "init" };
-    (Jump) => { "jump" };
-    (View) => { "view" };
-    (Visit) => { "visit" };
+    (Edit) => {
+        "edit"
+    };
+    (Import) => {
+        "import"
+    };
+    (Init) => {
+        "init"
+    };
+    (Jump) => {
+        "jump"
+    };
+    (View) => {
+        "view"
+    };
+    (Visit) => {
+        "visit"
+    };
 }
 
 fn _main() -> PaziResult {
@@ -68,6 +85,14 @@ fn _main() -> PaziResult {
                 .help("print debug information to stderr")
                 .long("debug")
                 .env("PAZI_DEBUG"),
+        )
+        .subcommand(
+            SubCommand::with_name(SUBCOMMAND!(Edit))
+                .about("Edit the frecency database")
+                .usage("pazi edit [<filter>]")
+                .arg(Arg::with_name("filter").help(
+                    "filter matches down further and edit that subset"
+                )),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Init))
@@ -117,9 +142,8 @@ fn _main() -> PaziResult {
                 .about("Add or visit a directory in the frecency database")
                 .arg(Arg::with_name("dir_target"))
         )
-        // Deprecated in favor of .PaziSubcommand::Jump
-        // left temporarily for backwards compatibility
-        // Remove before 1.0
+        // Code after this comment is deprecated in favor of .PaziSubcommand::Jump, but is left in
+        // temporarily for backwards compatibility. Remove before 1.0
         .arg(
             Arg::with_name("dir")
                 .help(
@@ -170,11 +194,14 @@ fn _main() -> PaziResult {
         // Capture ctrl-c so calling script
         // can print debug output
         if let Err(()) = intercept_ctrl_c() {
-            return PaziResult::Error
+            return PaziResult::Error;
         }
     }
 
     match flags.subcommand() {
+        (SUBCOMMAND!(Edit), Some(edit)) => {
+            return handle_edit(edit);
+        }
         (SUBCOMMAND!(Import), Some(import)) => {
             return handle_import(import);
         }
@@ -190,11 +217,11 @@ fn _main() -> PaziResult {
         (SUBCOMMAND!(Visit), Some(visit)) => {
             return handle_visit(visit);
         }
-        unknown => {
-            debug!("unrecognized subcommand: not an error for backwards compatibility: {:?}", unknown)
-        }
+        unknown => debug!(
+            "unrecognized subcommand: not an error for backwards compatibility: {:?}",
+            unknown
+        ),
     };
-
 
     // the remainder of this fn is backwards compatibility code, all of this should vanish before
     // 1.0
@@ -221,7 +248,6 @@ fn _main() -> PaziResult {
             }
         }
     } else if flags.is_present("dir") {
-        // Safe to unwrap because 'dir' requires 'dir_target'
         let mut matches = match flags.value_of("dir_target") {
             Some(to) => {
                 env::current_dir()
@@ -294,6 +320,39 @@ fn load_frecency() -> PathFrecency {
     PathFrecency::load(&frecency_path)
 }
 
+fn handle_edit(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    let mut fclone = frecency.clone();
+    let matches = match cmd.value_of("filter") {
+        Some(filter) => fclone.directory_matches_raw(filter),
+        None => fclone.items_with_frecency_raw(),
+    };
+    let match_vec = matches.collect();
+    let diff = match edit::edit(&match_vec) {
+        Ok(d) => d,
+        Err(e) => {
+            println!("Error editing: {}", e);
+            return PaziResult::Error;
+        }
+    };
+    match frecency.apply_diff(diff) {
+        Err(e) => {
+            println!("Error applying edit diff: {}", e);
+            return PaziResult::Error;
+        }
+        Ok(()) => {}
+    };
+    match frecency.save_to_disk() {
+        Ok(_) => {
+            return PaziResult::Success;
+        }
+        Err(e) => {
+            println!("pazi: error saving db: {}", e);
+            return PaziResult::Error;
+        }
+    }
+}
 
 fn handle_init(cmd: &ArgMatches) -> PaziResult {
     match cmd.value_of("shell") {
@@ -324,13 +383,9 @@ fn handle_import(cmd: &ArgMatches) -> PaziResult {
                 println!("error importing: {}", e);
                 return PaziResult::Error;
             }
-        }
+        },
         Some(s) => {
-            println!(
-                "{}\n\nUnsupported import target: {}",
-                cmd.usage(),
-                s
-            );
+            println!("{}\n\nUnsupported import target: {}", cmd.usage(), s);
             return PaziResult::Error;
         }
         None => {
@@ -358,14 +413,15 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
     let mut frecency = load_frecency();
     let res;
 
-    { // once non-lexical-lifetimes hits stable, remove these braces
+    {
+        // once non-lexical-lifetimes hits stable, remove these braces
         let mut matches = match cmd.value_of("dir_target") {
             Some(to) => {
                 env::current_dir()
                     .map(|cwd| {
                         frecency.maybe_add_relative_to(cwd, to);
                     })
-                .unwrap_or(()); // truly ignore failure to get cwd
+                    .unwrap_or(()); // truly ignore failure to get cwd
                 frecency.directory_matches(to)
             }
             None => frecency.items_with_frecency(),
@@ -431,12 +487,9 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
     let mut frecency = load_frecency();
 
     let matches = match cmd.value_of("dir_target") {
-        Some(to) => {
-            frecency.directory_matches(to)
-        }
+        Some(to) => frecency.directory_matches(to),
         None => frecency.items_with_frecency(),
     };
-
 
     for el in matches {
         // precision for floats only handles the floating part, which leads to unaligned
@@ -455,7 +508,7 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
     PaziResult::Success
 }
 
-fn intercept_ctrl_c() -> Result<(),()> {
+fn intercept_ctrl_c() -> Result<(), ()> {
     // When Pazi is run from a script or shell function,
     // pressing ctrl-c will send SIGINT to the process group
     // containing both Pazi *and* the shell function.
@@ -473,7 +526,7 @@ fn intercept_ctrl_c() -> Result<(),()> {
         let errno = *libc::__errno_location();
         if setpgid_res != 0 {
             debug!("Got {} from setpgid with errno {}", setpgid_res, errno);
-            return Err(())
+            return Err(());
         }
 
         // Get the ID of the process group we just made.
@@ -498,7 +551,7 @@ fn intercept_ctrl_c() -> Result<(),()> {
         let errno = *libc::__errno_location();
         if sigaction_res != 0 {
             debug!("Got {} from sigaction with errno {}", sigaction_res, errno);
-            return Err(())
+            return Err(());
         }
 
         // Make our process group the foreground process group
@@ -515,8 +568,11 @@ fn intercept_ctrl_c() -> Result<(),()> {
         if tcsetpgrp_res != 0 || sigaction_res != 0 {
             debug!("Got pgrp {}", pgrp);
             debug!("Got {} from tcsetpgrp with errno {}", tcsetpgrp_res, errno);
-            debug!("Got {} from sigaction with errno {}", sigaction_res, sigaction_errno);
-            return Err(())
+            debug!(
+                "Got {} from sigaction with errno {}",
+                sigaction_res, sigaction_errno
+            );
+            return Err(());
         }
     }
 

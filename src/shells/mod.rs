@@ -1,7 +1,7 @@
-mod zsh;
 mod bash;
-use self::zsh::Zsh;
+mod zsh;
 use self::bash::Bash;
+use self::zsh::Zsh;
 
 pub const SUPPORTED_SHELLS: [&str; 2] = ["zsh", "bash"];
 
