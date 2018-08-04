@@ -231,8 +231,8 @@ impl PathFrecency {
             };
             let matched = items.iter().flat_map(|item| {
                 matchers.iter().filter_map(move |m| {
-                    m.matches(item.0, filter)
-                        .map(move |v| weight(item.0, item.1, v))
+                    m.matches(&item.0, filter)
+                        .map(move |v| weight(&item.0, item.1, v))
                 })
             });
 

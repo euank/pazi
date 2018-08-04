@@ -20,14 +20,13 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct FrecencyView<'a, T>
+pub struct FrecencyView<'a, T, I>
 where
     T: Hash + Eq + Ord + Clone,
     T: 'a,
+    I: IntoIterator<Item = (&'a T, &'a f64)>,
 {
-    min: f64,
-    max: f64,
-    items: Vec<(&'a T, f64)>,
+    items: I,
 }
 
 impl<T> Frecency<T>
@@ -108,26 +107,9 @@ where
         }
     }
 
-    pub fn items(&self) -> FrecencyView<T> {
-        let mut min = None;
-        let mut max = None;
-        let v = self
-            .frecency
-            .iter()
-            .map(|(ref t, f)| {
-                if min == None || f < min.unwrap() {
-                    min = Some(f);
-                }
-                if max == None || f > max.unwrap() {
-                    max = Some(f);
-                }
-                (*t, f.clone())
-            })
-            .collect::<Vec<_>>();
+    pub fn items(&self) -> FrecencyView<T, &HashMap<T, f64>> {
         FrecencyView {
-            items: v,
-            min: min.unwrap_or(&f64::NAN).clone(),
-            max: max.unwrap_or(&f64::NAN).clone(),
+            items: &self.frecency,
         }
     }
 
@@ -136,19 +118,25 @@ where
     }
 }
 
-impl<'a, T> FrecencyView<'a, T>
+impl<'a, T, I> FrecencyView<'a, T, I>
 where
     T: Hash + Eq + Ord + Clone,
     T: 'a,
+    I: IntoIterator<Item = (&'a T, &'a f64)>,
 {
     pub fn normalized(self) -> Vec<(&'a T, f64)> {
-        if self.items.len() == 0 {
-            return self.items;
-        }
-        let min = self.min;
-        let max = self.max;
         let mut items: Vec<_> = self
             .items
+            .into_iter()
+            .map(|(k, v)| (k, v.clone()))
+            .collect();
+        if items.len() == 0 {
+            return Vec::new();
+        }
+        items.sort_by(descending_frecency);
+        let min = items[items.len() - 1].1;
+        let max = items[0].1;
+        items
             .into_iter()
             .map(|(s, v)| {
                 let normalized = (v - min) / (max - min);
@@ -158,14 +146,14 @@ where
                     (s, normalized)
                 }
             })
-            .collect();
-        items.sort_by(descending_frecency);
-
-        items
+            .collect()
     }
 
     pub fn raw(self) -> Vec<(&'a T, f64)> {
         self.items
+            .into_iter()
+            .map(|(k, v)| (k, v.clone()))
+            .collect()
     }
 }
 
@@ -180,6 +168,7 @@ pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
 mod test {
     use super::{Frecency, FrecencyView};
     use std;
+    use std::hash::Hash;
     use std::time;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -187,10 +176,13 @@ mod test {
         UNIX_EPOCH + time::Duration::from_secs(u)
     }
 
-    fn keys<T: std::cmp::Ord + std::clone::Clone + std::hash::Hash + std::fmt::Debug>(
-        f: FrecencyView<T>,
-    ) -> Vec<T> {
-        f.normalized().into_iter().map(|(k, v)| k.clone()).collect()
+    fn keys<'a, T, I>(f: FrecencyView<'a, T, I>) -> Vec<T>
+    where
+        I: IntoIterator<Item = (&'a T, &'a f64)>,
+        T: 'a,
+        T: Ord + Clone + Hash + std::fmt::Debug,
+    {
+        f.normalized().into_iter().map(|(k, _)| k.clone()).collect()
     }
 
     #[test]
