@@ -5,7 +5,7 @@ use tempdir::TempDir;
 use harness::{Autojumper, Fasd, Z, HarnessBuilder, NoJumper, Pazi, Shell, Autojump};
 use self::test::Bencher;
 
-fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
+fn cd_bench_normal(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, jumper, shell).finish();
