@@ -59,8 +59,7 @@ shell-parsers written entirely in shell, are [tricky to get right][fasd-pr].
 ### So, is it faster?
 
 Pazi is faster than the other autojump implementations it has been benchmarked
-against by a large margin. The results of these benchmarks are documented
-[here][benchmarks].
+against. The results of these benchmarks are documented [here][benchmarks].
 
 ## Status
 
