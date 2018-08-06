@@ -17,6 +17,7 @@
     $ docker pull rust:latest
     $ docker run -i -v $(pwd)/out-v${V}:/out rust:latest <<EOF
       set -ex
+      apt-get update && apt-get install -y musl-dev musl-tools
       rustup target add x86_64-unknown-linux-musl
       git clone https://github.com/euank/pazi.git
       cd pazi
