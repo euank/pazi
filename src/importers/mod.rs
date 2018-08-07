@@ -1,3 +1,4 @@
+use directories;
 use frecent_paths::PathFrecency;
 use std::env;
 use std::fs;
@@ -18,8 +19,9 @@ impl Fasd {
             // For proper compatibility, this should use 'shellexpand' or a similar crate.
             Ok(dir) => PathBuf::from(dir),
             Err(_) => {
-                let home =
-                    env::home_dir().ok_or_else(|| "could not get home directory".to_string())?;
+                let user_dirs =
+                    directories::UserDirs::new().ok_or_else(|| "could not get home dir")?;
+                let home = user_dirs.home_dir();
                 home.join(".fasd")
             }
         };

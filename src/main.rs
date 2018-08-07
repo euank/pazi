@@ -3,6 +3,7 @@ extern crate chan;
 extern crate chan_signal;
 #[macro_use]
 extern crate clap;
+extern crate directories;
 extern crate env_logger;
 extern crate libc;
 #[macro_use]
@@ -15,7 +16,6 @@ extern crate snailquote;
 extern crate tempfile;
 extern crate termion;
 extern crate which;
-extern crate xdg;
 
 #[macro_use]
 mod pazi_result;
@@ -29,6 +29,7 @@ mod matcher;
 mod shells;
 
 use std::env;
+use std::path::PathBuf;
 
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 use frecent_paths::PathFrecency;
@@ -225,14 +226,8 @@ fn _main() -> PaziResult {
 
     // the remainder of this fn is backwards compatibility code, all of this should vanish before
     // 1.0
-    let xdg_dirs =
-        xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
-
-    let frecency_path = xdg_dirs
-        .place_config_file(PAZI_DB_NAME)
-        .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
-
-    let mut frecency = PathFrecency::load(&frecency_path);
+    let path = frecency_path().expect("could not get frecency db path");
+    let mut frecency = PathFrecency::load(&path);
 
     let res;
     if let Some(dir) = flags.value_of("add-dir") {
@@ -310,14 +305,9 @@ fn _main() -> PaziResult {
 }
 
 fn load_frecency() -> PathFrecency {
-    let xdg_dirs =
-        xdg::BaseDirectories::with_prefix("pazi").expect("unable to determine xdg config path");
+    let path = frecency_path().expect("could not get frecency db path");
 
-    let frecency_path = xdg_dirs
-        .place_config_file(PAZI_DB_NAME)
-        .expect(&format!("could not create xdg '{}' path", PAZI_DB_NAME));
-
-    PathFrecency::load(&frecency_path)
+    PathFrecency::load(&path)
 }
 
 fn handle_edit(cmd: &ArgMatches) -> PaziResult {
@@ -506,6 +496,18 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
     }
 
     PaziResult::Success
+}
+
+fn frecency_path() -> Result<PathBuf, String> {
+    let project_dir = directories::ProjectDirs::from("", "", "pazi")
+        .ok_or("unable to determine config path".to_owned())?;
+    let config_dir = project_dir.config_dir();
+
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("could not create config dir: {}", e))?;
+
+    let db_path = config_dir.join(PAZI_DB_NAME);
+    Ok(db_path)
 }
 
 fn intercept_ctrl_c() -> Result<(), ()> {
