@@ -10,12 +10,12 @@ This release introduces the new subcommand `pazi edit` in addition to fixing a n
 ### Changes
 
 * Deleted directories are pruned from the database less aggressively ([#32](https://github.com/euank/pazi/issues/32))
-* Various operations have been moved from being flags to being subcommands. The supported user interface should remain identical.
+* Various operations have been moved from flags to subcommands. The supported user interface should remain identical.
 
-### Bugfixes
+### Bug Fixes
 
-* Directories named similar to subcommands (like `igni` or `init`) can now be jumped to ([#70](https://github.com/euank/pazi/issues/70), [#60](https://github.com/euank/pazi/issues/60)).
-* Providing a non-canonical directory path as an argument to `z` could result in it being added to the database in that non-canonical form. The path will now be canonicalized ([#76](https://github.com/euank/pazi/issues/76)).
+* Directories with names similar to pazi subcommands (like `igni` or `init`) can now be jumped to ([#70](https://github.com/euank/pazi/issues/70), [#60](https://github.com/euank/pazi/issues/60)).
+* Fixed an issue where a path could be added in a non-canonical form ([#76](https://github.com/euank/pazi/issues/76)).
 
 
 ## v0.0.2 - 2018-01-05
