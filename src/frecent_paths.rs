@@ -68,22 +68,22 @@ impl PathFrecency {
     pub fn maybe_add_relative_to(&mut self, mut base_path: PathBuf, relative_path: &str) -> bool {
         // If the path exists, add it to the database
         base_path.push(relative_path);
-        fs::canonicalize(base_path).map(|path| {
-            if path.is_dir() {
-                path
-                    .to_str()
-                    .map(|path_str| {
-                        debug!("Visited path exists: {}", path_str);
-                        self.frecency.insert(path_str.to_owned());
-                        self.dirty = true;
-                        true
-                    })
-                    .unwrap_or(false)
-            } else {
-                false
-            }
-        })
-        .unwrap_or(false)
+        fs::canonicalize(base_path)
+            .map(|path| {
+                if path.is_dir() {
+                    path.to_str()
+                        .map(|path_str| {
+                            debug!("Visited path exists: {}", path_str);
+                            self.frecency.insert(path_str.to_owned());
+                            self.dirty = true;
+                            true
+                        })
+                        .unwrap_or(false)
+                } else {
+                    false
+                }
+            })
+            .unwrap_or(false)
     }
 
     pub fn apply_diff(&mut self, diff: PathFrecencyDiff) -> Result<(), String> {
