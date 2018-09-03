@@ -2,6 +2,7 @@ pub mod pazi;
 pub mod fasd;
 pub mod autojump;
 pub mod z;
+pub mod jump;
 
 use harness::Shell;
 

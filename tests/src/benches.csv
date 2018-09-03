@@ -13,9 +13,9 @@
 # It works fine in bash, and the cd bench works, but for some reason the jump
 # one in zsh constantly hits that. I think it has to do with how $RANDOM works
 # in zsh.
-cd_bench, NoJumper Pazi Fasd, Zsh Bash, false
+cd_bench, NoJumper Pazi Fasd Jump, Zsh Bash, false
 cd_bench, Autojump, Zsh Bash, true
 cd_bench, Z, Bash, false
-jump_bench jump_large_db_bench, Pazi Fasd, Zsh Bash, false
+jump_bench jump_large_db_bench, Pazi Fasd Jump, Zsh Bash, false
 jump_bench jump_large_db_bench, Autojump, Zsh Bash, true
 jump_bench jump_large_db_bench, Z, Bash, true

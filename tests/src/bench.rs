@@ -2,13 +2,13 @@ extern crate tempdir;
 extern crate test;
 
 use tempdir::TempDir;
-use harness::{Autojumper, Fasd, Z, HarnessBuilder, NoJumper, Pazi, Shell, Autojump};
+use harness::{Autojumper, Fasd, Jump, Z, HarnessBuilder, NoJumper, Pazi, Shell, Autojump};
 use self::test::Bencher;
 
 fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
-    let mut h = HarnessBuilder::new(&root, jumper, shell).finish();
+    let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
     let dir1p = root.join("tmp1");
     let dir2p = root.join("tmp2");
     let dir1 = dir1p.to_str().unwrap();
@@ -33,19 +33,31 @@ fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
 
 fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.into_path();
     let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
     let dir1p = root.join("tmp1");
+    let dir2p = root.join("tmp2");
     let dir1 = dir1p.to_str().unwrap();
+    let dir2 = dir2p.to_str().unwrap();
+
+    // ensure we hit different directories on adjacent iterations; some autojumpers (cough `jump`)
+    // refuse to jump to cwd
+    let mut iter = 0;
 
     h.create_dir(&dir1);
     h.visit_dir(&dir1);
+    h.create_dir(&dir2);
+    h.visit_dir(&dir2);
+    h.visit_dir(&dir2);
     if sync {
         h.wait_children();
     }
 
     b.iter(move || {
-        assert_eq!(&h.jump("tmp1"), dir1);
+        let jump = if iter % 2 == 0 { "tmp1" } else { "tmp2" };
+        let dir = if iter % 2 == 0 { dir1 } else { dir2 };
+        iter += 1;
+        assert_eq!(&h.jump(jump), dir);
     });
 }
 
@@ -53,8 +65,10 @@ fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
-    let dirp = root.join("tmp_target");
-    let dir = dirp.to_str().unwrap();
+    let dir1p = root.join("tmp_target1");
+    let dir2p = root.join("tmp_target2");
+    let dir1 = dir1p.to_str().unwrap();
+    let dir2 = dir2p.to_str().unwrap();
 
     // Add about 1000 items to the db
     for i in 1..1000 {
@@ -66,14 +80,23 @@ fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync
         }
     }
 
-    h.create_dir(&dir);
-    h.visit_dir(&dir);
+    // ensure we hit different directories on adjacent iterations; some autojumpers (cough `jump`)
+    // refuse to jump to cwd
+    let mut iter = 0;
+    h.create_dir(&dir1);
+    h.visit_dir(&dir1);
+    h.create_dir(&dir2);
+    h.visit_dir(&dir2);
+    h.visit_dir(&dir2);
     if sync {
         h.wait_children();
     }
 
     b.iter(move || {
-        assert_eq!(&h.jump("tmp_target"), &dir);
+        let jump = if iter % 2 == 0 { "tmp_target1" } else { "tmp_target2" };
+        let dir = if iter % 2 == 0 { dir1 } else { dir2 };
+        iter += 1;
+        assert_eq!(&h.jump(jump), dir);
     });
 }
 

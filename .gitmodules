@@ -7,3 +7,6 @@
 [submodule "tests/testbins/z"]
 	path = tests/testbins/z
 	url = https://github.com/rupa/z
+[submodule "tests/testbins/jump"]
+	path = tests/testbins/jump
+	url = https://github.com/euank/jump
