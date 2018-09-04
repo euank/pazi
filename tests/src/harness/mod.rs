@@ -1,19 +1,19 @@
-mod testshell;
-mod shells;
 mod autojumpers;
+mod shells;
+mod testshell;
 
-use std::path::Path;
 use self::testshell::TestShell;
 use std::fs;
+use std::path::Path;
 
-pub use self::shells::Shell;
-pub use self::autojumpers::Autojumper;
-pub use self::autojumpers::pazi::Pazi;
-pub use self::autojumpers::fasd::Fasd;
-pub use self::autojumpers::z::Z;
-pub use self::autojumpers::jump::Jump;
 pub use self::autojumpers::autojump::Autojump;
+pub use self::autojumpers::fasd::Fasd;
+pub use self::autojumpers::jump::Jump;
+pub use self::autojumpers::pazi::Pazi;
+pub use self::autojumpers::z::Z;
+pub use self::autojumpers::Autojumper;
 pub use self::autojumpers::None as NoJumper;
+pub use self::shells::Shell;
 
 pub struct Harness<'a> {
     testshell: TestShell,
@@ -50,12 +50,24 @@ impl<'a> HarnessBuilder<'a> {
     }
 
     pub fn finish(self) -> Harness<'a> {
-        Harness::new(self.root, self.shell, self.jumper, self.preinit, self.cgroup)
+        Harness::new(
+            self.root,
+            self.shell,
+            self.jumper,
+            self.preinit,
+            self.cgroup,
+        )
     }
 }
 
 impl<'a> Harness<'a> {
-    fn new(root: &Path, shell: &Shell, jumper: &'a Autojumper, preinit: Option<&str>, cgroup: bool) -> Self {
+    fn new(
+        root: &Path,
+        shell: &Shell,
+        jumper: &'a Autojumper,
+        preinit: Option<&str>,
+        cgroup: bool,
+    ) -> Self {
         let ps1 = "==PAZI==> ";
         shell.setup(&root, jumper, ps1, preinit.unwrap_or(""));
 
@@ -84,7 +96,11 @@ impl<'a> Harness<'a> {
     }
 
     pub fn jump(&mut self, search: &str) -> String {
-        self.testshell.run(&format!("{} '{}' >/dev/null && pwd", self.jumper.jump_alias(), search))
+        self.testshell.run(&format!(
+            "{} '{}' >/dev/null && pwd",
+            self.jumper.jump_alias(),
+            search
+        ))
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {

@@ -33,7 +33,7 @@ eval "$({} shell {})"
         }
     }
 
-    fn jump_alias(&self) -> &'static str{
+    fn jump_alias(&self) -> &'static str {
         "j"
     }
 }

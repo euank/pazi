@@ -1,15 +1,19 @@
 extern crate tempdir;
 extern crate test;
 
-use tempdir::TempDir;
-use harness::{Autojumper, Fasd, Jump, Z, HarnessBuilder, Harness, NoJumper, Pazi, Shell, Autojump};
 use self::test::Bencher;
+use harness::{
+    Autojump, Autojumper, Fasd, Harness, HarnessBuilder, Jump, NoJumper, Pazi, Shell, Z,
+};
 use std::path::Path;
+use tempdir::TempDir;
 
 fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
-    let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
+    let mut h = HarnessBuilder::new(&root, jumper, shell)
+        .cgroup(sync)
+        .finish();
 
     // ensure we hit different directories on adjacent iterations; autojumpers may validly avoid
     // doing work on 'cd .'.
@@ -29,7 +33,9 @@ fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
 fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.into_path();
-    let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
+    let mut h = HarnessBuilder::new(&root, jumper, shell)
+        .cgroup(sync)
+        .finish();
 
     // ensure we hit different directories on adjacent iterations; some autojumpers (cough `jump`)
     // refuse to jump to cwd
@@ -50,7 +56,9 @@ fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
 fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
-    let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
+    let mut h = HarnessBuilder::new(&root, jumper, shell)
+        .cgroup(sync)
+        .finish();
 
     create_and_visit_dirs(&mut h, &root, "dbnoise", 1000, sync);
 
@@ -73,7 +81,13 @@ struct JumpTarget {
     name: String,
 }
 
-fn create_and_visit_dirs(h: &mut Harness, root: &Path, prefix: &str, n: isize, sync: bool) -> Vec<JumpTarget> {
+fn create_and_visit_dirs(
+    h: &mut Harness,
+    root: &Path,
+    prefix: &str,
+    n: isize,
+    sync: bool,
+) -> Vec<JumpTarget> {
     let mut res = Vec::new();
     for i in 0..n {
         let name = format!("{}_{}", prefix, i);
@@ -83,7 +97,7 @@ fn create_and_visit_dirs(h: &mut Harness, root: &Path, prefix: &str, n: isize, s
         if sync {
             h.wait_children();
         }
-        res.push(JumpTarget{
+        res.push(JumpTarget {
             path: path,
             name: name,
         });

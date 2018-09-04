@@ -32,7 +32,7 @@ impl Autojumper for Z {
         }
     }
 
-    fn jump_alias(&self) -> &'static str{
+    fn jump_alias(&self) -> &'static str {
         "z"
     }
 }
