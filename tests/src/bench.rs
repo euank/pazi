@@ -2,29 +2,24 @@ extern crate tempdir;
 extern crate test;
 
 use tempdir::TempDir;
-use harness::{Autojumper, Fasd, Jump, Z, HarnessBuilder, NoJumper, Pazi, Shell, Autojump};
+use harness::{Autojumper, Fasd, Jump, Z, HarnessBuilder, Harness, NoJumper, Pazi, Shell, Autojump};
 use self::test::Bencher;
+use std::path::Path;
 
 fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
-    let dir1p = root.join("tmp1");
-    let dir2p = root.join("tmp2");
-    let dir1 = dir1p.to_str().unwrap();
-    let dir2 = dir2p.to_str().unwrap();
-
-    h.create_dir(&dir1);
-    h.create_dir(&dir2);
 
     // ensure we hit different directories on adjacent iterations; autojumpers may validly avoid
     // doing work on 'cd .'.
     let mut iter = 0;
+    let dirs = create_and_visit_dirs(&mut h, &root, "tmp_target", 2, sync);
 
     b.iter(move || {
-        let dir = if iter % 2 == 0 { &dir1 } else { &dir2 };
+        let target = &dirs[iter % 2];
         iter += 1;
-        h.visit_dir(dir);
+        h.visit_dir(&target.path);
         if sync {
             h.wait_children()
         }
@@ -35,29 +30,20 @@ fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync: bool) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.into_path();
     let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
-    let dir1p = root.join("tmp1");
-    let dir2p = root.join("tmp2");
-    let dir1 = dir1p.to_str().unwrap();
-    let dir2 = dir2p.to_str().unwrap();
 
     // ensure we hit different directories on adjacent iterations; some autojumpers (cough `jump`)
     // refuse to jump to cwd
     let mut iter = 0;
-
-    h.create_dir(&dir1);
-    h.visit_dir(&dir1);
-    h.create_dir(&dir2);
-    h.visit_dir(&dir2);
-    h.visit_dir(&dir2);
-    if sync {
-        h.wait_children();
-    }
+    // "prewarm" the directories because it makes fasd less flaky on bash.
+    // I suspect it's due to the use of 'history' to populate fasd's database, though I'm not
+    // actually certain why it flakes so much without this.
+    create_and_visit_dirs(&mut h, &root, "tmp_target", 2, sync);
+    let dirs = create_and_visit_dirs(&mut h, &root, "tmp_target", 2, sync);
 
     b.iter(move || {
-        let jump = if iter % 2 == 0 { "tmp1" } else { "tmp2" };
-        let dir = if iter % 2 == 0 { dir1 } else { dir2 };
+        let target = &dirs[iter % 2];
         iter += 1;
-        assert_eq!(&h.jump(jump), dir);
+        assert_eq!(&h.jump(&target.name), &target.path);
     });
 }
 
@@ -65,39 +51,44 @@ fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell, sync
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, jumper, shell).cgroup(sync).finish();
-    let dir1p = root.join("tmp_target1");
-    let dir2p = root.join("tmp_target2");
-    let dir1 = dir1p.to_str().unwrap();
-    let dir2 = dir2p.to_str().unwrap();
 
-    // Add about 1000 items to the db
-    for i in 1..1000 {
-        let dirn = root.join(format!("tmp{}", i));
-        h.create_dir(&dirn.to_string_lossy());
-        h.visit_dir(&dirn.to_string_lossy());
-        if sync {
-            h.wait_children();
-        }
-    }
+    create_and_visit_dirs(&mut h, &root, "dbnoise", 1000, sync);
 
     // ensure we hit different directories on adjacent iterations; some autojumpers (cough `jump`)
     // refuse to jump to cwd
     let mut iter = 0;
-    h.create_dir(&dir1);
-    h.visit_dir(&dir1);
-    h.create_dir(&dir2);
-    h.visit_dir(&dir2);
-    h.visit_dir(&dir2);
-    if sync {
-        h.wait_children();
-    }
+    // prewarm for fasd, see above.
+    create_and_visit_dirs(&mut h, &root, "tmp_target", 2, sync);
+    let dirs = create_and_visit_dirs(&mut h, &root, "tmp_target", 2, sync);
 
     b.iter(move || {
-        let jump = if iter % 2 == 0 { "tmp_target1" } else { "tmp_target2" };
-        let dir = if iter % 2 == 0 { dir1 } else { dir2 };
+        let target = &dirs[iter % 2];
         iter += 1;
-        assert_eq!(&h.jump(jump), dir);
+        assert_eq!(&h.jump(&target.name), &target.path);
     });
+}
+
+struct JumpTarget {
+    path: String,
+    name: String,
+}
+
+fn create_and_visit_dirs(h: &mut Harness, root: &Path, prefix: &str, n: isize, sync: bool) -> Vec<JumpTarget> {
+    let mut res = Vec::new();
+    for i in 0..n {
+        let name = format!("{}_{}", prefix, i);
+        let path = root.join(&name).to_str().unwrap().to_string();
+        h.create_dir(&path);
+        h.visit_dir(&path);
+        if sync {
+            h.wait_children();
+        }
+        res.push(JumpTarget{
+            path: path,
+            name: name,
+        });
+    }
+    res
 }
 
 // This file is generated with 'build.rs' based on the contents of 'src/benches.csv'; to change the
