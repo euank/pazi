@@ -2,8 +2,13 @@ CARGO_BIN:=$(shell which cargo)
 
 .PHONY: integ
 integ:
-	cd .. && cargo build --release
+	cd .. && $(CARGO_BIN) build --release
 	$(CARGO_BIN) test
+
+.PHONY: integ-all
+integ-all: jump
+	cd .. && $(CARGO_BIN) build --release
+	$(CARGO_BIN) test --features=nightly -- --test-threads=1
 
 .PHONY: bench
 bench: jump
