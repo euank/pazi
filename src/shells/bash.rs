@@ -15,9 +15,9 @@ __pazi_add_dir() {
     __PAZI_LAST_PWD="${PWD}"
 }
 
-case \$PROMPT_COMMAND in
-    *__pazi_add_dir\;*) ;;
-    *) PROMPT_COMMAND="__pazi_add_dir;\$PROMPT_COMMMAND" ;;
+case "${PROMPT_COMMAND}" in
+    *__pazi_add_dir;*) ;;
+    *) PROMPT_COMMAND="__pazi_add_dir;${PROMPT_COMMMAND}" ;;
 esac
 
 pazi_cd() {
