@@ -16,7 +16,7 @@ __pazi_add_dir() {
 }
 
 case "${PROMPT_COMMAND}" in
-    *__pazi_add_dir;*) ;;
+    *__pazi_add_dir\;*) ;;
     *) PROMPT_COMMAND="__pazi_add_dir;${PROMPT_COMMMAND}" ;;
 esac
 
