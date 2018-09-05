@@ -197,8 +197,16 @@ impl TestShell {
                 let mut buf: [u8; 4 * 1024] = [0; 4 * 1024];
                 let nread = pty.read(&mut buf).unwrap();
                 if nread == 0 {
-                    write_eof_got.send(()).unwrap();
                     // EOF
+                    if current_command_output.len() > 0
+                        && last_prompt_scrollback_count != data.scrollback.len() as i32
+                    {
+                        // Have unsent scrollback data; go ahead and send it
+                        write_command_out
+                            .send(current_command_output.join("\n"))
+                            .unwrap();
+                    }
+                    write_eof_got.send(()).unwrap();
                     return;
                 }
                 for byte in &buf[..nread] {
@@ -221,9 +229,7 @@ impl TestShell {
                         // mark that we've seen this prompt, don't handle it again even if there's
                         // backspacing
                         last_prompt_scrollback_count = data.scrollback.len() as i32;
-                    } else if data.scrollback.len() > last_len.scrollback
-                        && last_prompt_scrollback_count != -1
-                    {
+                    } else if data.scrollback.len() > last_len.scrollback {
                         // this only happens if the last character was a newline since we're
                         // checking this every statemachine advance.
                         let last_line = data.scrollback.last().unwrap();
@@ -242,9 +248,14 @@ impl TestShell {
             }
         });
 
-        command_out
+        let first_output = command_out
             .recv_timeout(Duration::from_secs(5))
             .expect("did not get initial prompt");
+
+        // Happens if the shell prints errors, etc. during startup
+        if first_output != "" {
+            panic!("Encountered errors during shell startup: {:?}", first_output);
+        }
 
         TestShell {
             fork: fork,
