@@ -180,10 +180,11 @@ fn it_handles_existing_bash_prompt_command() {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path();
     let prompt_cmd = r#"
-PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
+MY_PROMPT=1
+PROMPT_COMMAND='printf -v MY_PROMPT_OUT "\033k%s\033\\" "${MY_PROMPT}"'
 "#;
     let mut h = HarnessBuilder::new(&root, &Pazi, &Shell::Bash)
-        .preinit(prompt_cmd)
+        .preinit(&prompt_cmd)
         .finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
@@ -191,6 +192,11 @@ PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/
     h.create_dir(&slash_tmp);
     h.visit_dir(&slash_tmp);
     assert_eq!(h.jump("tmp"), slash_tmp);
+
+    h.run_cmd("MY_PROMPT=2");
+    let check_prompt_out_cmd = r#"printf "%q\n" "${MY_PROMPT_OUT}""#;
+    let expected_prompt_out = r#"$'\Ek2\E\\'"#;
+    assert_eq!(h.run_cmd(check_prompt_out_cmd), expected_prompt_out);
 }
 
 // Test for https://github.com/euank/pazi/issues/49
