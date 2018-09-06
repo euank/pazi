@@ -1,17 +1,17 @@
-extern crate pty;
-extern crate vte;
 extern crate libc;
+extern crate pty;
 extern crate rand;
+extern crate vte;
 
-use std::os::unix::process::CommandExt;
-use std::process::Command;
-use std::path::Path;
 use std::fs;
 use std::io::Read;
 use std::io::Write;
-use std::time::Duration;
+use std::os::unix::process::CommandExt;
+use std::path::Path;
+use std::process::Command;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 
 use self::rand::Rng;
 
@@ -19,7 +19,8 @@ use super::shells;
 
 pub struct TestShell {
     // fork is here for lifetime reasons; can't drop it until the pty is done
-    #[allow(unused)] fork: pty::fork::Fork,
+    #[allow(unused)]
+    fork: pty::fork::Fork,
     pty: pty::fork::Master,
     pid: libc::pid_t,
     output: mpsc::Receiver<String>,
@@ -167,8 +168,12 @@ impl TestShell {
         };
 
         if let Some(cg) = cgpath.clone() {
-            let mut f = fs::OpenOptions::new().write(true).open(format!("{}/cgroup.procs", cg)).expect("no cgroup.procs file");
-            f.write(format!("{}\n", child_pid).as_bytes()).expect("write pid err");
+            let mut f = fs::OpenOptions::new()
+                .write(true)
+                .open(format!("{}/cgroup.procs", cg))
+                .expect("no cgroup.procs file");
+            f.write(format!("{}\n", child_pid).as_bytes())
+                .expect("write pid err");
         }
 
         let (write_command_out, command_out) = mpsc::channel();
@@ -273,12 +278,12 @@ impl TestShell {
             for line in output.lines() {
                 let pid = line.parse::<i32>().unwrap();
                 if pid == self.pid {
-                    continue
+                    continue;
                 }
                 pids.push(pid);
             }
             if pids.len() == 0 {
-                return
+                return;
             }
             unsafe {
                 let mut status = 0;
@@ -295,8 +300,8 @@ impl TestShell {
 
 #[cfg(features = "testshell-dev")]
 mod dev {
-    use std::process::Command;
     use super::TestShell;
+    use std::process::Command;
     #[test]
     fn testshell() {
         let mut cmd = Command::new("zsh");

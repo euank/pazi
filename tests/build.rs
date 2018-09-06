@@ -52,10 +52,10 @@ fn main() {
                         r#"
     #[bench]{4}
     fn {0}(b: &mut Bencher) {{
-        {1}(b, &{2}, &Shell::{3});
+        {1}(b, &{2}, &Shell::{3}, {5});
     }}
     "#,
-                        &fn_name, &bench_name, &jumper, &shell, maybe_ignore,
+                        &fn_name, &bench_name, &jumper, &shell, maybe_ignore, bench_waits,
                     ).as_str();
                 }
             }

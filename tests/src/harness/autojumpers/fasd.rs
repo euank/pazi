@@ -41,7 +41,7 @@ eval "$({} --init posix-alias bash-hook)"
         }
     }
 
-    fn jump_alias(&self) -> &'static str{
+    fn jump_alias(&self) -> &'static str {
         "z"
     }
 }

@@ -1,12 +1,12 @@
 extern crate pazi;
 extern crate tempdir;
 
-use integ::pazi::shells::SUPPORTED_SHELLS;
-use tempdir::TempDir;
 use harness::{Fasd, HarnessBuilder, Pazi, Shell};
+use integ::pazi::shells::SUPPORTED_SHELLS;
 use std::collections::HashMap;
-use std::time::Duration;
 use std::thread::sleep;
+use std::time::Duration;
+use tempdir::TempDir;
 
 #[test]
 fn it_jumps() {
@@ -182,7 +182,9 @@ fn it_handles_existing_bash_prompt_command() {
     let prompt_cmd = r#"
 PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
 "#;
-    let mut h = HarnessBuilder::new(&root, &Pazi, &Shell::Bash).preinit(prompt_cmd).finish();
+    let mut h = HarnessBuilder::new(&root, &Pazi, &Shell::Bash)
+        .preinit(prompt_cmd)
+        .finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
 
@@ -239,7 +241,8 @@ fn it_handles_things_that_look_like_subcommands_shell(shell: &Shell) {
         ("initialize", "init"),
         ("--help", "help"),
         ("import", "import"),
-    ].into_iter().collect();
+    ].into_iter()
+    .collect();
 
     for (dir, jump) in map {
         let dirname = root.join(dir).into_os_string().into_string().unwrap();

@@ -18,7 +18,10 @@ env:
   global:
   - RUST_BACKTRACE=1
 
+before_script:
+- eval "$(gimme 1.11)" # golang for 'jump' benchmarks
+
 script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
-- cd tests && cargo test -v --features="$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo nightly || echo default)" -- --test-threads=1
+- cd tests && make "$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo integ-all || echo integ)"

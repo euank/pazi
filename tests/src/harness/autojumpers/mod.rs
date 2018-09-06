@@ -1,6 +1,7 @@
-pub mod pazi;
-pub mod fasd;
 pub mod autojump;
+pub mod fasd;
+pub mod jump;
+pub mod pazi;
 pub mod z;
 
 use harness::Shell;
@@ -22,7 +23,7 @@ impl Autojumper for None {
     fn init_for(&self, _: &Shell) -> String {
         "".to_owned()
     }
-    fn jump_alias(&self) -> &'static str{
+    fn jump_alias(&self) -> &'static str {
         panic!("'None' can't jump");
     }
 }

@@ -1,12 +1,13 @@
-use std::path::Path;
 use harness::autojumpers::Autojumper;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 
 pub enum Shell {
     Bash,
     Zsh,
-    #[allow(dead_code)] Conch,
+    #[allow(dead_code)]
+    Conch,
 }
 
 pub struct ShellCmd<'a> {
