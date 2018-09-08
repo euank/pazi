@@ -9,15 +9,15 @@ impl Shell for Bash {
             r#"
 __pazi_add_dir() {
     # TODO: should pazi keep track of this itself in its datadir?
-    if [[ "${__PAZI_LAST_PWD}" != "${PWD}" ]]; then
+    if [[ "${__PAZI_LAST_PWD:-}" != "${PWD}" ]]; then
         pazi visit "${PWD}"
     fi
     __PAZI_LAST_PWD="${PWD}"
 }
 
-case \$PROMPT_COMMAND in
+case "${PROMPT_COMMAND:-}" in
     *__pazi_add_dir\;*) ;;
-    *) PROMPT_COMMAND="__pazi_add_dir;\$PROMPT_COMMMAND" ;;
+    *) PROMPT_COMMAND="__pazi_add_dir;${PROMPT_COMMAND:-}" ;;
 esac
 
 pazi_cd() {
