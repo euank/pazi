@@ -2,11 +2,13 @@ extern crate pazi;
 extern crate tempdir;
 
 use harness::{Fasd, HarnessBuilder, Pazi, Shell};
-use integ::pazi::shells::SUPPORTED_SHELLS;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
 use tempdir::TempDir;
+
+/// Shells that we support running the integ tests on
+const SUPPORTED_SHELLS: [&str; 2] = ["zsh", "bash"];
 
 #[test]
 fn it_jumps() {

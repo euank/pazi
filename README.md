@@ -45,6 +45,14 @@ if command -v pazi &>/dev/null; then
 fi
 ```
 
+Or if you are a fish user, add the following to your `config.fish`
+
+```sh
+if command -v pazi >/dev/null
+  status --is-interactive; and pazi init fish | source
+end
+```
+
 Finally, re-launch the shell and start zapping around :)
 
 ## What makes pazi different from *X*
