@@ -1,8 +1,7 @@
 #[macro_use]
-extern crate chan;
-extern crate chan_signal;
-#[macro_use]
 extern crate clap;
+#[macro_use]
+extern crate crossbeam_channel as channel;
 extern crate directories;
 extern crate env_logger;
 extern crate libc;
@@ -12,6 +11,7 @@ extern crate rmp_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate signal_hook;
 extern crate snailquote;
 extern crate tempfile;
 extern crate termion;
