@@ -187,9 +187,9 @@ fn _main() -> PaziResult {
         .get_matches();
 
     if flags.is_present("debug") {
-        env_logger::LogBuilder::new()
-            .filter(None, log::LogLevelFilter::Debug)
-            .init()
+        env_logger::Builder::new()
+            .filter(None, log::LevelFilter::Debug)
+            .try_init()
             .unwrap();
 
         // Capture ctrl-c so calling script
