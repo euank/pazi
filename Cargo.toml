@@ -16,8 +16,7 @@ default-features = false
 features = ["color", "vec_map"]
 
 [dependencies]
-chan = "~0.1"
-chan-signal = "~0.3"
+crossbeam-channel = "0.2"
 directories = "~1"
 env_logger = "~0.4"
 libc = "~0.2"
@@ -25,6 +24,7 @@ log = "~0.3"
 rmp-serde = "~0.13"
 serde = "~1"
 serde_derive = "~1"
+signal-hook = "0.1.5"
 snailquote = "0.1.0"
 tempfile = "3"
 termion = "~1"

@@ -1,5 +1,5 @@
-use chan;
-use chan_signal;
+use channel;
+use signal_hook;
 use std::convert::From;
 use std::fmt;
 use std::fs;
@@ -24,8 +24,8 @@ where
     // first.
     // That makes 'sigint'/'sigterm' result in us exiting.
     let mut alt = AlternateScreen::from(stdout);
-    let signal = chan_signal::notify(&[chan_signal::Signal::INT, chan_signal::Signal::TERM]);
-    let (suser_input, ruser_input) = chan::sync(0);
+    let signal = notify(&[signal_hook::SIGINT, signal_hook::SIGTERM]);
+    let (suser_input, ruser_input) = channel::bounded(0);
     // Wait for a signal or for the user to select a choice.
     write!(alt, "{}{}", clear::All, cursor::Goto(1, 1))?;
 
@@ -45,11 +45,11 @@ where
         let mut input = String::new();
         suser_input.send(stdin.read_line(&mut input).map(|_| input));
     });
-    chan_select! {
-        signal.recv() =>  {
+    select! {
+        recv(signal, _msg) =>  {
             return Err(FilterError::NoSelection);
         },
-        ruser_input.recv() -> res => {
+        recv(ruser_input, res) => {
             return res.unwrap()
                 .map_err(|_| FilterError::String("unable to read input".to_string()))
                 .and_then(|val| {
@@ -79,6 +79,18 @@ where
                 });
         },
     };
+}
+
+
+fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
+    let (s, r) = channel::bounded(100);
+    let signals = signal_hook::iterator::Signals::new(signals)?;
+    thread::spawn(move || {
+        for signal in signals.forever() {
+            s.send(signal);
+        }
+    });
+    Ok(r)
 }
 
 #[derive(Debug)]
