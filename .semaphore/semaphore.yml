@@ -1,0 +1,18 @@
+version: v1.0
+name: Pazi testing
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: "dev"
+    task:
+      jobs:
+      - name: Check environment
+        commands:
+          - checkout
+          - uname -a
+          - cat /etc/os-release
+          - zcat /proc/config.gz
+          - ls -1 /sys/fs/cgroup/
