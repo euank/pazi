@@ -522,10 +522,17 @@ fn intercept_ctrl_c() -> Result<(), ()> {
     // That way, when ctrl-c sends a SIGINT, the only process
     // to receive it is Pazi.
     //
+    unsafe fn get_errno() -> *mut libc::c_int {
+        #[cfg(target_os = "linux")]
+        return libc::__errno_location();
+        #[cfg(target_os = "macos")]
+        return libc::__error();
+    }
+
     unsafe {
         // Create a new process group with this process in it.
         let setpgid_res = libc::setpgid(0, 0);
-        let errno = *libc::__errno_location();
+        let errno = *get_errno();
         if setpgid_res != 0 {
             debug!("Got {} from setpgid with errno {}", setpgid_res, errno);
             return Err(());
@@ -543,6 +550,7 @@ fn intercept_ctrl_c() -> Result<(), ()> {
             sa_sigaction: libc::SIG_IGN,
             sa_mask: std::mem::zeroed(),
             sa_flags: 0,
+            #[cfg(target_os = "linux")]
             sa_restorer: None,
         };
         // Place to save old SIGTTOU handler
@@ -550,7 +558,7 @@ fn intercept_ctrl_c() -> Result<(), ()> {
 
         // Ignore SIGTTOU and save previous action
         let sigaction_res = libc::sigaction(libc::SIGTTOU, &ignore_action, &mut old_action);
-        let errno = *libc::__errno_location();
+        let errno = *get_errno();
         if sigaction_res != 0 {
             debug!("Got {} from sigaction with errno {}", sigaction_res, errno);
             return Err(());
@@ -559,12 +567,12 @@ fn intercept_ctrl_c() -> Result<(), ()> {
         // Make our process group the foreground process group
         // (giving us access to stdin, etc)
         let tcsetpgrp_res = libc::tcsetpgrp(libc::STDIN_FILENO, pgrp);
-        let errno = *libc::__errno_location();
+        let errno = *get_errno();
 
         // Put the old SIGTTOU signal handler back
         // We try to do this even if tcsetpgrp failed!
         let sigaction_res = libc::sigaction(libc::SIGTTOU, &old_action, std::ptr::null_mut());
-        let sigaction_errno = *libc::__errno_location();
+        let sigaction_errno = *get_errno();
 
         // Handle tcsetpgrp and sigaction errors
         if tcsetpgrp_res != 0 || sigaction_res != 0 {
