@@ -14,5 +14,4 @@ blocks:
           - checkout
           - uname -a
           - cat /etc/os-release
-          - zcat /proc/config.gz
           - ls -1 /sys/fs/cgroup/

@@ -3,6 +3,7 @@ branches:
   only:
   - master
   - dev
+  - "tmp/sema"
 rust:
   - stable
   - nightly
@@ -22,6 +23,6 @@ before_script:
 - eval "$(gimme 1.11)" # golang for 'jump' benchmarks
 
 script:
-- cargo build --verbose --examples
-- cargo build --release # for integ tests
-- cd tests && make "$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo integ-all || echo integ)"
+- uname -a
+- cat /etc/os-release
+- ls -1 /sys/fs/cgroup/
