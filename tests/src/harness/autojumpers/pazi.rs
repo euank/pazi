@@ -20,12 +20,22 @@ impl Autojumper for Pazi {
 
     fn init_for(&self, shell: &Shell) -> String {
         match shell {
-            &Shell::Bash | &Shell::Zsh => format!(r#"set -u; eval "$(pazi init {})""#, shell.name()),
-            &Shell::Conch => unimplemented!(),
+            &Shell::Bash | &Shell::Zsh => {
+                format!(r#"set -u; eval "$(pazi init {})""#, shell.name())
+            }
+            &Shell::Fish => "status --is-interactive; and pazi init fish | source".to_string(),
         }
+    }
+
+    fn supported_shells(&self) -> Vec<Shell> {
+        vec![Shell::Bash, Shell::Zsh, Shell::Fish]
     }
 
     fn jump_alias(&self) -> &'static str {
         "z"
+    }
+
+    fn to_str(&self) -> &'static str {
+        "pazi"
     }
 }

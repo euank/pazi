@@ -29,11 +29,25 @@ eval "$({} shell {})"
                 self.bin_path(),
                 shell.name(),
             ),
-            &Shell::Conch => unimplemented!(),
+            &Shell::Fish => format!(
+                r#"
+status --is-interactive; and . ({} shell {} | psub)
+"#,
+                self.bin_path(),
+                shell.name(),
+            ),
         }
+    }
+
+    fn supported_shells(&self) -> Vec<Shell> {
+        vec![Shell::Bash, Shell::Zsh, Shell::Fish]
     }
 
     fn jump_alias(&self) -> &'static str {
         "j"
+    }
+
+    fn to_str(&self) -> &'static str {
+        "jump"
     }
 }

@@ -66,7 +66,7 @@ impl VTEData {
 impl vte::Perform for VTEData {
     fn print(&mut self, c: char) {
         self.current_line.truncate(self.current_line_cursor);
-        self.current_line_cursor += 1;
+        self.current_line_cursor += c.len_utf8();
         self.current_line.push(c);
     }
 
@@ -149,6 +149,7 @@ impl TestShell {
         shellcmd.env_clear();
         shellcmd.env("PS1", ps1);
         shellcmd.env("PATH", std::env::var("PATH").unwrap());
+        shellcmd.env("TERM", "xterm");
         for env in cmd.env {
             shellcmd.env(env.0, env.1);
         }
@@ -255,7 +256,10 @@ impl TestShell {
 
         // Happens if the shell prints errors, etc. during startup
         if first_output != "" {
-            panic!("Encountered errors during shell startup: {:?}", first_output);
+            panic!(
+                "Encountered errors during shell startup: {:?}",
+                first_output
+            );
         }
 
         TestShell {

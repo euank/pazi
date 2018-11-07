@@ -37,11 +37,21 @@ eval "$({} --init posix-alias bash-hook)"
                 r#"eval "$({} --init posix-alias zsh-hook)""#,
                 self.bin_path()
             ),
-            &Shell::Conch => unimplemented!(),
+            &Shell::Fish => {
+                unimplemented!("fasd does not support fish");
+            }
         }
+    }
+
+    fn supported_shells(&self) -> Vec<Shell> {
+        vec![Shell::Bash, Shell::Zsh]
     }
 
     fn jump_alias(&self) -> &'static str {
         "z"
+    }
+
+    fn to_str(&self) -> &'static str {
+        "fasd"
     }
 }

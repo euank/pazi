@@ -42,11 +42,19 @@ impl Autojumper for Autojump {
         match shell {
             &Shell::Bash => format!("source '{}'", self.shell_path("bash")),
             &Shell::Zsh => format!("source '{}'", self.shell_path("zsh")),
-            &Shell::Conch => unimplemented!(),
+            &Shell::Fish => format!("source '{}'", self.shell_path("fish")),
         }
+    }
+
+    fn supported_shells(&self) -> Vec<Shell> {
+        vec![Shell::Bash, Shell::Zsh, Shell::Fish]
     }
 
     fn jump_alias(&self) -> &'static str {
         "j"
+    }
+
+    fn to_str(&self) -> &'static str {
+        "autojump"
     }
 }
