@@ -42,7 +42,6 @@ impl Autojumper for Autojump {
         match shell {
             &Shell::Bash => format!("source '{}'", self.shell_path("bash")),
             &Shell::Zsh => format!("source '{}'", self.shell_path("zsh")),
-            &Shell::Conch => unimplemented!(),
         }
     }
 

@@ -37,7 +37,6 @@ eval "$({} --init posix-alias bash-hook)"
                 r#"eval "$({} --init posix-alias zsh-hook)""#,
                 self.bin_path()
             ),
-            &Shell::Conch => unimplemented!(),
         }
     }
 

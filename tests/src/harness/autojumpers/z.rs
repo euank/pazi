@@ -28,7 +28,6 @@ impl Autojumper for Z {
 "#,
                 self.bin_path()
             ),
-            &Shell::Conch => unimplemented!(),
         }
     }
 

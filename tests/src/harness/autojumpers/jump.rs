@@ -29,7 +29,6 @@ eval "$({} shell {})"
                 self.bin_path(),
                 shell.name(),
             ),
-            &Shell::Conch => unimplemented!(),
         }
     }
 
