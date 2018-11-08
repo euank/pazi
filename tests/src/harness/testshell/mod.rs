@@ -148,6 +148,7 @@ impl TestShell {
         let mut shellcmd = Command::new(cmd.cmd);
         shellcmd.env_clear();
         shellcmd.env("PS1", ps1);
+        shellcmd.env("PATH", std::env::var("PATH").unwrap());
         for env in cmd.env {
             shellcmd.env(env.0, env.1);
         }
