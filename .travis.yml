@@ -6,6 +6,9 @@ branches:
 rust:
   - stable
   - nightly
+os:
+  - linux
+  - osx
 
 addons:
   apt:
@@ -13,6 +16,12 @@ addons:
     - zsh
     - bash
     - python3
+  homebrew:
+    packages:
+    - zsh
+    - bash
+    - python3
+    - gimme
 
 env:
   global:
