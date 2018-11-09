@@ -98,12 +98,16 @@ impl<'a> Harness<'a> {
     }
 
     pub fn jump(&mut self, search: &str) -> String {
-        self.testshell.run(&format!(
-            "{} '{}' >/dev/null {} pwd",
-            self.jumper.jump_alias(),
-            search,
-            self.shell.and_str(),
-        ))
+        let cmd = match self.shell {
+            Shell::Bash | Shell::Zsh => {
+                format!("{} '{}' && pwd", self.jumper.jump_alias(), search)
+            },
+            Shell::Fish => {
+                format!("{} '{}'; and pwd", self.jumper.jump_alias(), search)
+            }
+        };
+
+        self.testshell.run(&cmd)
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {
@@ -111,12 +115,15 @@ impl<'a> Harness<'a> {
     }
 
     pub fn run_cmd_with_status(&mut self, cmd: &str) -> String {
-        self.testshell.run(&format!(
-            "{} {} {}",
-            cmd,
-            self.shell.and_str(),
-            self.shell.echo_status()
-        ))
+        let cmd = match self.shell {
+            Shell::Bash | Shell::Zsh => {
+                format!("{} && echo $?", cmd)
+            },
+            Shell::Fish => {
+                format!("{}; and echo $status", cmd)
+            }
+        };
+        self.testshell.run(&cmd)
     }
 
     // wait for any children of the shell to vanish; this is approximated by assuming that the

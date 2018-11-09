@@ -110,20 +110,4 @@ set PATH $PATH (dirname {bin_path})
             env: vec![("HOME", home)],
         }
     }
-
-    pub fn and_str(&self) -> &'static str {
-        match self {
-            &Shell::Bash => "&&",
-            &Shell::Zsh => "&&",
-            &Shell::Fish => ";and",
-        }
-    }
-
-    pub fn echo_status(&self) -> &'static str {
-        match self {
-            &Shell::Bash => "echo $?",
-            &Shell::Zsh => "echo $?",
-            &Shell::Fish => "echo $status",
-        }
-    }
 }
