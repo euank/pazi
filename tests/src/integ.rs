@@ -19,7 +19,7 @@ fn it_jumps() {
 
 fn it_jumps_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
@@ -40,7 +40,7 @@ fn it_jumps_to_exact_directory() {
 
 fn it_jumps_to_exact_directory_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let slash_tmp_path = root.join("tmp");
     let slash_tmp = slash_tmp_path.to_string_lossy();
@@ -49,6 +49,7 @@ fn it_jumps_to_exact_directory_shell(shell: &Shell) {
 
     h.create_dir(&unvisited_dir);
     h.visit_dir(&slash_tmp);
+
     assert_eq!(h.jump("asdf"), unvisited_dir);
 }
 
@@ -63,7 +64,7 @@ fn it_jumps_to_more_frecent_items() {
 
 fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
@@ -100,7 +101,7 @@ fn it_imports_from_fasd() {
 
 fn it_imports_from_fasd_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
 
     {
         let mut fasd = HarnessBuilder::new(&root, &Fasd, shell).finish();
@@ -132,7 +133,7 @@ fn it_ignores_dead_dirs_on_cd() {
 
 fn it_ignores_dead_dirs_on_cd_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
 
     h.create_dir(&root.join("1/tmp").to_string_lossy());
@@ -159,7 +160,7 @@ fn it_prints_list_on_lonely_z() {
 
 fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
 
     h.create_dir(&root.join("1/tmp").to_string_lossy());
@@ -178,7 +179,7 @@ fn it_prints_list_on_lonely_z_shell(shell: &Shell) {
 #[test]
 fn it_handles_existing_bash_prompt_command() {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let prompt_cmd = r#"
 MY_PROMPT=1
 PROMPT_COMMAND='printf -v MY_PROMPT_OUT "\033k%s\033\\" "${MY_PROMPT}"'
@@ -210,7 +211,7 @@ fn it_handles_help_output() {
 
 fn it_handles_help_output_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let help1 = h.run_cmd("pazi --help && echo $?");
     let help2 = h.run_cmd("z -h && echo $?");
@@ -235,7 +236,7 @@ fn it_handles_things_that_look_like_subcommands() {
 
 fn it_handles_things_that_look_like_subcommands_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
-    let root = tmpdir.path();
+    let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
 
     // map of <DirectoryName, JumpTarget>
@@ -251,11 +252,11 @@ fn it_handles_things_that_look_like_subcommands_shell(shell: &Shell) {
     .collect();
 
     for (dir, jump) in map {
-        let dirname = root.join(dir).into_os_string().into_string().unwrap();
-        h.create_dir(&dirname);
-        h.visit_dir(&dirname);
+        let dir_name = root.join(dir).into_os_string().into_string().unwrap();
+        h.create_dir(&dir_name);
+        h.visit_dir(&dir_name);
         h.visit_dir(&root.to_string_lossy());
-        assert_eq!(h.jump(jump), dirname);
-        h.delete_dir(&dirname);
+        assert_eq!(h.jump(jump), dir_name);
+        h.delete_dir(&dir_name);
     }
 }
