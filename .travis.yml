@@ -39,4 +39,10 @@ before_script:
 script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
-- cd tests && make "$([ "${TRAVIS_OS_NAME}-${TRAVIS_RUST_VERSION}" == "linux-nightly" ] && echo integ-all || echo integ)"
+# integ on stable
+# integ-nightly on osx nightly
+# integ-all on linux nightly
+- MAKE_TARGET="integ"
+- '[[ "${TRAVIS_RUST_VERSION}" == "nightly" ]] && MAKE_TARGET=integ-nightly || true'
+- '[[ "${TRAVIS_OS_NAME}-${TRAVIS_RUST_VERSION}" == "linux-nightly" ]] && MAKE_TARGET=integ-all || true'
+- cd tests && make $MAKE_TARGET
