@@ -28,11 +28,19 @@ impl Autojumper for Z {
 "#,
                 self.bin_path()
             ),
-            &Shell::Conch => unimplemented!(),
+            &Shell::Fish => unimplemented!("z does not support fish"),
         }
+    }
+
+    fn supported_shells(&self) -> Vec<Shell> {
+        vec![Shell::Bash, Shell::Zsh]
     }
 
     fn jump_alias(&self) -> &'static str {
         "z"
+    }
+
+    fn to_str(&self) -> &'static str {
+        "rupa-z"
     }
 }

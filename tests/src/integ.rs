@@ -1,8 +1,8 @@
 extern crate pazi;
 extern crate tempdir;
 
+use harness::Autojumper;
 use harness::{Fasd, HarnessBuilder, Pazi, Shell};
-use integ::pazi::shells::SUPPORTED_SHELLS;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
@@ -10,10 +10,8 @@ use tempdir::TempDir;
 
 #[test]
 fn it_jumps() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        println!("testing: {}", shell);
-        let s = Shell::from_str(shell);
-        it_jumps_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_jumps_shell(&shell);
     }
 }
 
@@ -31,10 +29,8 @@ fn it_jumps_shell(shell: &Shell) {
 
 #[test]
 fn it_jumps_to_exact_directory() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        println!("testing: {}", shell);
-        let s = Shell::from_str(shell);
-        it_jumps_to_exact_directory_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_jumps_to_exact_directory_shell(shell);
     }
 }
 
@@ -55,10 +51,8 @@ fn it_jumps_to_exact_directory_shell(shell: &Shell) {
 
 #[test]
 fn it_jumps_to_more_frecent_items() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        println!("testing: {}", shell);
-        let s = Shell::from_str(shell);
-        it_jumps_to_more_frecent_items_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_jumps_to_more_frecent_items_shell(shell);
     }
 }
 
@@ -92,10 +86,15 @@ fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
 
 #[test]
 fn it_imports_from_fasd() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        println!("testing: {}", shell);
-        let s = Shell::from_str(shell);
-        it_imports_from_fasd_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        if !Fasd.supported_shells().contains(shell) {
+            println!(
+                "skipping fasd import test for {}; unsupported by fasd",
+                shell.name()
+            );
+            continue;
+        }
+        it_imports_from_fasd_shell(shell);
     }
 }
 
@@ -124,10 +123,8 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
 
 #[test]
 fn it_ignores_dead_dirs_on_cd() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        println!("testing: {}", shell);
-        let s = Shell::from_str(shell);
-        it_ignores_dead_dirs_on_cd_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_ignores_dead_dirs_on_cd_shell(shell);
     }
 }
 
@@ -145,16 +142,16 @@ fn it_ignores_dead_dirs_on_cd_shell(shell: &Shell) {
     h.visit_dir(&root.join("2/tmp").to_string_lossy());
 
     assert_eq!(h.jump("tmp"), root.join("2/tmp").to_string_lossy());
+    // leave the dir before deleting it; fish complains if you don't
+    h.visit_dir(&root.to_string_lossy());
     h.delete_dir(&root.join("2/tmp").to_string_lossy());
     assert_eq!(h.jump("tmp"), root.join("1/tmp").to_string_lossy());
 }
 
 #[test]
 fn it_prints_list_on_lonely_z() {
-    // running just 'z' or just 'pazi' should print a directory listing, not error
-    for shell in SUPPORTED_SHELLS.iter() {
-        let s = Shell::from_str(shell);
-        it_prints_list_on_lonely_z_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_prints_list_on_lonely_z_shell(shell);
     }
 }
 
@@ -203,9 +200,8 @@ PROMPT_COMMAND='printf -v MY_PROMPT_OUT "\033k%s\033\\" "${MY_PROMPT}"'
 // Test for https://github.com/euank/pazi/issues/49
 #[test]
 fn it_handles_help_output() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        let s = Shell::from_str(shell);
-        it_handles_help_output_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_handles_help_output_shell(shell);
     }
 }
 
@@ -213,9 +209,9 @@ fn it_handles_help_output_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path().canonicalize().unwrap();
     let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
-    let help1 = h.run_cmd("pazi --help && echo $?");
-    let help2 = h.run_cmd("z -h && echo $?");
-    let help3 = h.run_cmd("z --help && echo $?");
+    let help1 = h.run_cmd_with_status("pazi --help");
+    let help2 = h.run_cmd_with_status("z -h");
+    let help3 = h.run_cmd_with_status("z --help");
     assert!(help1.contains("USAGE:"), help1);
     assert!(help2.contains("USAGE:"), help2);
     assert!(help1.ends_with("\n0"));
@@ -228,9 +224,8 @@ fn it_handles_help_output_shell(shell: &Shell) {
 // and https://github.com/euank/pazi/issues/70
 #[test]
 fn it_handles_things_that_look_like_subcommands() {
-    for shell in SUPPORTED_SHELLS.iter() {
-        let s = Shell::from_str(shell);
-        it_handles_things_that_look_like_subcommands_shell(&s);
+    for shell in &Pazi.supported_shells() {
+        it_handles_things_that_look_like_subcommands_shell(shell);
     }
 }
 
@@ -248,7 +243,8 @@ fn it_handles_things_that_look_like_subcommands_shell(shell: &Shell) {
         ("initialize", "init"),
         ("--help", "help"),
         ("import", "import"),
-    ].into_iter()
+    ]
+    .into_iter()
     .collect();
 
     for (dir, jump) in map {

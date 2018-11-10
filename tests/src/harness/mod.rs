@@ -18,6 +18,7 @@ pub use self::shells::Shell;
 pub struct Harness<'a> {
     testshell: TestShell,
     jumper: &'a Autojumper,
+    shell: &'a Shell,
 }
 
 pub struct HarnessBuilder<'a> {
@@ -63,12 +64,12 @@ impl<'a> HarnessBuilder<'a> {
 impl<'a> Harness<'a> {
     fn new(
         root: &Path,
-        shell: &Shell,
+        shell: &'a Shell,
         jumper: &'a Autojumper,
         preinit: Option<&str>,
         cgroup: bool,
     ) -> Self {
-        let ps1 = "==PAZI==> ";
+        let ps1 = &format!("=={}=={}==>", shell.name(), jumper.to_str());
         shell.setup(&root, jumper, ps1, preinit.unwrap_or(""));
 
         let cmd = shell.command(&root);
@@ -79,6 +80,7 @@ impl<'a> Harness<'a> {
         };
         Harness {
             testshell: testshell,
+            shell: shell,
             jumper: jumper,
         }
     }
@@ -96,15 +98,32 @@ impl<'a> Harness<'a> {
     }
 
     pub fn jump(&mut self, search: &str) -> String {
-        self.testshell.run(&format!(
-            "{} '{}' >/dev/null && pwd",
-            self.jumper.jump_alias(),
-            search
-        ))
+        let cmd = match self.shell {
+            Shell::Bash | Shell::Zsh => {
+                format!("{} '{}' && pwd", self.jumper.jump_alias(), search)
+            },
+            Shell::Fish => {
+                format!("{} '{}'; and pwd", self.jumper.jump_alias(), search)
+            }
+        };
+
+        self.testshell.run(&cmd)
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {
         self.testshell.run(cmd)
+    }
+
+    pub fn run_cmd_with_status(&mut self, cmd: &str) -> String {
+        let cmd = match self.shell {
+            Shell::Bash | Shell::Zsh => {
+                format!("{} && echo $?", cmd)
+            },
+            Shell::Fish => {
+                format!("{}; and echo $status", cmd)
+            }
+        };
+        self.testshell.run(&cmd)
     }
 
     // wait for any children of the shell to vanish; this is approximated by assuming that the

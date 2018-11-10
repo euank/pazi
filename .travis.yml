@@ -12,16 +12,20 @@ os:
 
 addons:
   apt:
+    sources:
+    - sourceline: 'ppa:fish-shell/release-2'
     packages:
-    - zsh
     - bash
+    - fish
     - python3
+    - zsh
   homebrew:
     packages:
-    - zsh
     - bash
-    - python3
+    - fish
     - gimme
+    - python3
+    - zsh
 
 env:
   global:
