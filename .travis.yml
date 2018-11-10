@@ -1,3 +1,4 @@
+dist: xenial
 language: rust
 branches:
   only:
@@ -32,9 +33,10 @@ env:
   - RUST_BACKTRACE=1
 
 before_script:
+- sudo -E ./tests/.travis/hack.sh
 - eval "$(gimme 1.11)" # golang for 'jump' benchmarks
 
 script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
-- cd tests && make "$([ "${TRAVIS_RUST_VERSION}" == "nightly" ] && echo integ-all || echo integ)"
+- cd tests && make "$([ "${TRAVIS_OS_NAME}-${TRAVIS_RUST_VERSION}" == "linux-nightly" ] && echo integ-all || echo integ)"
