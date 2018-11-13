@@ -1,6 +1,6 @@
 ## Creating a release
 
-1. Write an appropriate changelog
+1. Write an appropriate changelog (hint, check the [milestone](https://github.com/euank/pazi/milestones)
 1. Bump the version in Cargo.toml
 1. Bump the version in tests:
     ```sh
