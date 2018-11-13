@@ -100,10 +100,10 @@ impl<'a> Harness<'a> {
     pub fn jump(&mut self, search: &str) -> String {
         let cmd = match self.shell {
             Shell::Bash | Shell::Zsh => {
-                format!("{} '{}' && pwd", self.jumper.jump_alias(), search)
+                format!("{} '{}' >/dev/null && pwd", self.jumper.jump_alias(), search)
             },
             Shell::Fish => {
-                format!("{} '{}'; and pwd", self.jumper.jump_alias(), search)
+                format!("{} '{}' >/dev/null; and pwd", self.jumper.jump_alias(), search)
             }
         };
 
