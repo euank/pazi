@@ -1,3 +1,21 @@
+## v0.2.0 - 2018-11-13
+
+This release adds support for the [fish shell](https://fishshell.com/)!
+
+### Features
+
+* `pazi init fish` has been added! See the readme for how to use it.
+* pazi is now builds on (and is tested on) macOS. Pre-built release binaries will come in a future release.
+
+### Changes
+
+* [`jump`](https://github.com/gsamokovarov/jump) is now  included in the benchmark code, though new results have not been added to the docs yet.
+* Various dependencies have been updated.
+
+### Bug Fixes
+
+* `PROMPT_COMMAND` under `bash` is now correctly updated ([#84](https://github.com/euank/pazi/pull/84)).
+
 ## v0.1.0 - 2018-08-06
 
 This release introduces the new subcommand `pazi edit` in addition to fixing a number of bugs.
