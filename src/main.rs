@@ -403,43 +403,40 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
     let mut frecency = load_frecency();
     let res;
 
-    {
-        // once non-lexical-lifetimes hits stable, remove these braces
-        let mut matches = match cmd.value_of("dir_target") {
-            Some(to) => {
-                env::current_dir()
-                    .map(|cwd| {
-                        frecency.maybe_add_relative_to(cwd, to);
-                    })
-                    .unwrap_or(()); // truly ignore failure to get cwd
-                frecency.directory_matches(to)
-            }
-            None => frecency.items_with_frecency(),
-        };
+    let mut matches = match cmd.value_of("dir_target") {
+        Some(to) => {
+            env::current_dir()
+                .map(|cwd| {
+                    frecency.maybe_add_relative_to(cwd, to);
+                })
+                .unwrap_or(()); // truly ignore failure to get cwd
+            frecency.directory_matches(to)
+        }
+        None => frecency.items_with_frecency(),
+    };
 
-        res = if cmd.is_present("interactive") {
-            let stdout = termion::get_tty().unwrap();
-            match interactive::filter(matches, std::io::stdin(), stdout) {
-                Ok(el) => {
-                    print!("{}", el);
-                    PaziResult::SuccessDirectory
-                }
-                Err(interactive::FilterError::NoSelection) => {
-                    // early return since no selection arbitrarily implies not trimming non-existent
-                    // paths. The early return skips the save_to_disk below
-                    return PaziResult::ErrorNoInput;
-                }
-                Err(e) => {
-                    println!("{}", e);
-                    return PaziResult::Error;
-                }
+    res = if cmd.is_present("interactive") {
+        let stdout = termion::get_tty().unwrap();
+        match interactive::filter(matches, std::io::stdin(), stdout) {
+            Ok(el) => {
+                print!("{}", el);
+                PaziResult::SuccessDirectory
             }
-        } else if let Some((path, _)) = matches.next() {
-            print!("{}", path);
-            PaziResult::SuccessDirectory
-        } else {
-            PaziResult::Error
-        };
+            Err(interactive::FilterError::NoSelection) => {
+                // early return since no selection arbitrarily implies not trimming non-existent
+                // paths. The early return skips the save_to_disk below
+                return PaziResult::ErrorNoInput;
+            }
+            Err(e) => {
+                println!("{}", e);
+                return PaziResult::Error;
+            }
+        }
+    } else if let Some((path, _)) = matches.next() {
+        print!("{}", path);
+        PaziResult::SuccessDirectory
+    } else {
+        PaziResult::Error
     };
 
     if let Err(e) = frecency.save_to_disk() {

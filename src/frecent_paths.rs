@@ -223,37 +223,31 @@ impl PathFrecency {
 
         let mut dedupe_map: HashMap<String, f64> = HashMap::new();
 
-        // TODO: when NLL happens, rewrite this to eliminate extra curlies
-        // and the `if insert` block
-        {
-            // Run each matcher on each path
-            let items = if normalize {
-                self.frecency.items().normalized()
-            } else {
-                self.frecency.items().raw()
-            };
-            let matched = items.iter().flat_map(|item| {
-                matchers.iter().filter_map(move |m| {
-                    m.matches(&item.0, filter)
-                        .map(move |v| weight(&item.0, item.1, v))
-                })
-            });
+        // Run each matcher on each path
+        let items = if normalize {
+            self.frecency.items().normalized()
+        } else {
+            self.frecency.items().raw()
+        };
+        let matched = items.iter().flat_map(|item| {
+            matchers.iter().filter_map(move |m| {
+                m.matches(&item.0, filter)
+                    .map(move |v| weight(&item.0, item.1, v))
+            })
+        });
 
-            // Remove dupe paths, keeping only each with the highest score
-            for el in matched {
-                let insert = match dedupe_map.get_mut(el.0) {
-                    Some(val) => {
-                        if el.1 > *val {
-                            *val = el.1
-                        }
-                        false
+        // Remove dupe paths, keeping only each with the highest score
+        for el in matched {
+            match dedupe_map.get_mut(el.0) {
+                Some(val) => {
+                    if el.1 > *val {
+                        *val = el.1
                     }
-                    None => true,
-                };
-                if insert {
+                }
+                None => {
                     dedupe_map.insert(el.0.to_owned(), el.1);
                 }
-            }
+            };
         }
 
         let mut deduped: Vec<_> = dedupe_map.into_iter().collect();
