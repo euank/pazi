@@ -1,9 +1,9 @@
 // frecent_paths is a specialization of frecency that understands the semantics of stored paths.
 // It does things like the messyness of checking for a directory's existence and such.
 
-use frecency::{descending_frecency, Frecency};
+use crate::frecency::{descending_frecency, Frecency};
 use libc;
-use matcher::*;
+use crate::matcher::*;
 use rmp_serde;
 use serde;
 use serde::Serialize;

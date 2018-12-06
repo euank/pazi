@@ -1,4 +1,4 @@
-use frecent_paths::PathFrecencyDiff;
+use crate::frecent_paths::PathFrecencyDiff;
 use snailquote;
 use std::char;
 use std::collections::HashMap;

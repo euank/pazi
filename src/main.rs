@@ -32,9 +32,9 @@ use std::env;
 use std::path::PathBuf;
 
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
-use frecent_paths::PathFrecency;
-use pazi_result::*;
-use shells::SUPPORTED_SHELLS;
+use crate::frecent_paths::PathFrecency;
+use crate::pazi_result::*;
+use crate::shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
