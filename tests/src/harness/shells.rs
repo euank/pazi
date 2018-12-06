@@ -1,4 +1,4 @@
-use harness::autojumpers::Autojumper;
+use crate::harness::autojumpers::Autojumper;
 use std::fs;
 use std::io::Write;
 use std::path::Path;

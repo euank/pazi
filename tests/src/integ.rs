@@ -1,8 +1,5 @@
-extern crate pazi;
-extern crate tempdir;
-
-use harness::Autojumper;
-use harness::{Fasd, HarnessBuilder, Pazi, Shell};
+use crate::harness::Autojumper;
+use crate::harness::{Fasd, HarnessBuilder, Pazi, Shell};
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;

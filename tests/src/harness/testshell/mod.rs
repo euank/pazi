@@ -1,8 +1,3 @@
-extern crate libc;
-extern crate pty;
-extern crate rand;
-extern crate vte;
-
 use std::fs;
 use std::io::Read;
 use std::io::Write;
@@ -13,7 +8,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-use self::rand::Rng;
+use rand::Rng;
 
 use super::shells;
 

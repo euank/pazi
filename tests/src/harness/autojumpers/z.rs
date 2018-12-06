@@ -1,5 +1,5 @@
 use super::Autojumper;
-use harness::Shell;
+use crate::harness::Shell;
 use std::env;
 use std::path::Path;
 
