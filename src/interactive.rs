@@ -1,4 +1,4 @@
-use channel;
+use crate::channel;
 use signal_hook;
 use std::convert::From;
 use std::fmt;

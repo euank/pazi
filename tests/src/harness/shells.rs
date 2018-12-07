@@ -1,4 +1,4 @@
-use harness::autojumpers::Autojumper;
+use crate::harness::autojumpers::Autojumper;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
@@ -21,15 +21,6 @@ impl Shell {
             &Shell::Bash => "bash",
             &Shell::Zsh => "zsh",
             &Shell::Fish => "fish",
-        }
-    }
-
-    pub fn from_str(name: &str) -> Self {
-        match name {
-            "bash" => Shell::Bash,
-            "zsh" => Shell::Zsh,
-            "fish" => Shell::Fish,
-            _ => panic!("invalid shell: {}", name),
         }
     }
 

@@ -4,7 +4,7 @@ pub mod jump;
 pub mod pazi;
 pub mod z;
 
-use harness::Shell;
+use crate::harness::Shell;
 
 pub trait Autojumper {
     fn bin_path(&self) -> String;
