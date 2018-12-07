@@ -24,15 +24,6 @@ impl Shell {
         }
     }
 
-    pub fn from_str(name: &str) -> Self {
-        match name {
-            "bash" => Shell::Bash,
-            "zsh" => Shell::Zsh,
-            "fish" => Shell::Fish,
-            _ => panic!("invalid shell: {}", name),
-        }
-    }
-
     pub fn setup(&self, root: &Path, autojump: &Autojumper, ps1: &str, preinit: &str) {
         let rc_file = match *self {
             Shell::Bash | Shell::Zsh => root.join(format!("home/pazi/.{}rc", self.name())),
