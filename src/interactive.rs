@@ -24,7 +24,8 @@ where
     // first.
     // That makes 'sigint'/'sigterm' result in us exiting.
     let mut alt = AlternateScreen::from(stdout);
-    let signal = notify(&[signal_hook::SIGINT, signal_hook::SIGTERM]);
+    let signal = notify(&[signal_hook::SIGINT, signal_hook::SIGTERM])
+        .map_err(|err| format!("error setting sigint hook: {}", err))?;
     let (suser_input, ruser_input) = channel::bounded(0);
     // Wait for a signal or for the user to select a choice.
     write!(alt, "{}{}", clear::All, cursor::Goto(1, 1))?;
@@ -43,13 +44,14 @@ where
     thread::spawn(move || {
         // Since threads can be messy, do the minimum possible in the thread.
         let mut input = String::new();
-        suser_input.send(stdin.read_line(&mut input).map(|_| input));
+        // ignore result, we're intentionally racing input and ctrl-c signals
+        let _ = suser_input.send(stdin.read_line(&mut input).map(|_| input));
     });
     select! {
-        recv(signal, _msg) =>  {
+        recv(signal) -> _ => {
             return Err(FilterError::NoSelection);
         },
-        recv(ruser_input, res) => {
+        recv(ruser_input) -> res => {
             return res.unwrap()
                 .map_err(|_| FilterError::String("unable to read input".to_string()))
                 .and_then(|val| {
@@ -87,7 +89,8 @@ fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
     let signals = signal_hook::iterator::Signals::new(signals)?;
     thread::spawn(move || {
         for signal in signals.forever() {
-            s.send(signal);
+            // ignore result, we're intentionally racing input and ctrl-c signals
+            let _ = s.send(signal);
         }
     });
     Ok(r)
