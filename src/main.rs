@@ -267,6 +267,7 @@ fn _main() -> PaziResult {
     };
 
     let res;
+    let mut frecency_bump = None;
     if let Some(dir) = flags.value_of("add-dir") {
         frecency.visit(dir.to_string());
 
@@ -295,6 +296,13 @@ fn _main() -> PaziResult {
             let stdout = termion::get_tty().unwrap();
             match interactive::filter(matches, std::io::stdin(), stdout) {
                 Ok(el) => {
+                    // Special case: if the user has interactively selected a specific directory,
+                    // that's a sign we should bump its weight up in frecency. Bump!
+                    // Note: 3x is a number that was picked entirely arbitrarily, making it
+                    // configurable or tweaking further are both reasonable
+                    // Note: due to borrowing rules, we bump the weight after the if-else ladder is
+                    // done, frecency is borrowed here already for matches
+                    frecency_bump = Some((el.clone(), 3.0));
                     print!("{}", el);
                     res = PaziResult::SuccessDirectory;
                 }
@@ -332,6 +340,9 @@ fn _main() -> PaziResult {
             println!("{:.5}\t{}", str_val, el.0);
         }
         res = PaziResult::Success;
+    }
+    if let Some((el, bump)) = frecency_bump {
+        frecency.visit_weight(el, bump);
     }
     if let Err(e) = frecency.save_to_disk() {
         // leading newline in case it was after a 'print' above
