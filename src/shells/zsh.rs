@@ -37,6 +37,14 @@ pazi_cd() {
     esac
 }
 alias z='pazi_cd'
+"#,
+            r#"_pazi_cd() {
+  CURRENTWORD="${LBUFFER/* /}${RBUFFER/ */}"
+  local subcmds=(${(f)"$(pazi complete $CURRENTWORD)"})
+  _describe 'pazi' subcmds
+}
+
+compdef _pazi_cd pazi_cd 'pazi jump'
 "#
         )
     }

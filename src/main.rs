@@ -74,6 +74,9 @@ macro_rules! SUBCOMMAND {
     (Visit) => {
         "visit"
     };
+    (Complete) => {
+        "complete"
+    }
 }
 
 fn _main() -> PaziResult {
@@ -141,6 +144,14 @@ fn _main() -> PaziResult {
                 .setting(AppSettings::Hidden)
                 .setting(AppSettings::DisableHelpSubcommand)
                 .about("Add or visit a directory in the frecency database")
+                .arg(Arg::with_name("dir_target"))
+        )
+        .subcommand(
+            SubCommand::with_name(SUBCOMMAND!(Complete))
+            // used by the shell completion functions internally, it shouldn't be called directly
+                .setting(AppSettings::Hidden)
+                .setting(AppSettings::DisableHelpSubcommand)
+                .about("Returns possible completions for shells")
                 .arg(Arg::with_name("dir_target"))
         )
         // Code after this comment is deprecated in favor of .PaziSubcommand::Jump, but is left in
@@ -217,6 +228,9 @@ fn _main() -> PaziResult {
         }
         (SUBCOMMAND!(Visit), Some(visit)) => {
             return handle_visit(visit);
+        }
+        (SUBCOMMAND!(Complete), Some(completion)) => {
+            return handle_completion(completion);
         }
         unknown => debug!(
             "unrecognized subcommand: not an error for backwards compatibility: {:?}",
@@ -490,6 +504,22 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
         // there are enough characters.
         let str_val = format!("{:.5}", (el.1 * 100f64));
         println!("{:.5}\t{}", str_val, el.0);
+    }
+
+    PaziResult::Success
+}
+
+fn handle_completion(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    let matches = match cmd.value_of("dir_target") {
+        Some(to) => frecency.directory_matches(to),
+        None => frecency.items_with_frecency(),
+    };
+
+    for el in matches {
+        let str_val = format!("{:.5}", (el.1 * 100f64));
+        println!("{}:{}", el.0, str_val);
     }
 
     PaziResult::Success
