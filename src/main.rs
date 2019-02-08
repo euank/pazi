@@ -557,6 +557,14 @@ fn intercept_ctrl_c() -> Result<(), ()> {
     }
 
     unsafe {
+        // If STDIN isn't a tty, we can't reasonably make ourselves
+        // the foreground process group, so just give up
+        // (happens during zsh autocompletion)
+        let isatty_res = libc::isatty(libc::STDIN_FILENO);
+        if isatty_res == 0 {
+            return Ok(());
+        }
+
         // Create a new process group with this process in it.
         let setpgid_res = libc::setpgid(0, 0);
         let errno = *get_errno();
