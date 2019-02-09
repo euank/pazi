@@ -44,12 +44,7 @@ impl<'a> HarnessBuilder<'a> {
     }
 
     pub fn finish(self) -> Harness<'a> {
-        Harness::new(
-            self.root,
-            self.shell,
-            self.jumper,
-            self.preinit,
-        )
+        Harness::new(self.root, self.shell, self.jumper, self.preinit)
     }
 }
 
@@ -92,12 +87,16 @@ impl<'a> Harness<'a> {
 
     pub fn jump(&mut self, search: &str) -> String {
         let cmd = match self.shell {
-            Shell::Bash | Shell::Zsh => {
-                format!("{} '{}' >/dev/null && pwd", self.jumper.jump_alias(), search)
-            },
-            Shell::Fish => {
-                format!("{} '{}' >/dev/null; and pwd", self.jumper.jump_alias(), search)
-            }
+            Shell::Bash | Shell::Zsh => format!(
+                "{} '{}' >/dev/null && pwd",
+                self.jumper.jump_alias(),
+                search
+            ),
+            Shell::Fish => format!(
+                "{} '{}' >/dev/null; and pwd",
+                self.jumper.jump_alias(),
+                search
+            ),
         };
 
         let res = self.testshell.run(&cmd).to_string();
@@ -107,18 +106,46 @@ impl<'a> Harness<'a> {
         res
     }
 
+    // interactive_jump will do a 'z -i {search}' command, and then try to pick the appropriate
+    // number to jump to 'selection' and input it.
+    // It will return the number of the entry it picked.
+    pub fn interactive_jump(&mut self, search: &str, selection: &str) -> i32 {
+        unimplemented!()
+    }
+
+    // interactive_list returns the 'z -i {search} output'. Specifically, it returns an ordered
+    // list of the weight and path, with the order matching that in which `pazi` prints it.
+    pub fn interactive_list(&mut self, search: &str) -> Vec<(f64, String)> {
+        let cmd = match self.shell {
+            Shell::Bash | Shell::Zsh => {
+                format!("z -i {} || true", search) // ignore 'NoSelection' error
+            }
+            Shell::Fish => {
+                // no 'set -e', error away
+                format!("z -i {}", search)
+            }
+        };
+        let interactive_output = self.testshell.run_until(&cmd, "> ");
+        // Cancel out of interactive mode
+        self.testshell.ctrl_c_to_prompt();
+        // parse interactive_output
+        interactive_output
+            .lines()
+            .map(|line| {
+                let parts: Vec<_> = line.split("\t").collect();
+                (parts[1].parse().unwrap(), parts[2].parse().unwrap())
+            })
+            .collect()
+    }
+
     pub fn run_cmd(&mut self, cmd: &str) -> String {
         self.testshell.run(cmd)
     }
 
     pub fn run_cmd_with_status(&mut self, cmd: &str) -> String {
         let cmd = match self.shell {
-            Shell::Bash | Shell::Zsh => {
-                format!("{} && echo $?", cmd)
-            },
-            Shell::Fish => {
-                format!("{}; and echo $status", cmd)
-            }
+            Shell::Bash | Shell::Zsh => format!("{} && echo $?", cmd),
+            Shell::Fish => format!("{}; and echo $status", cmd),
         };
         self.testshell.run(&cmd)
     }

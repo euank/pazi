@@ -56,8 +56,7 @@ fn it_jumps_to_more_frecent_items() {
 fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path().canonicalize().unwrap();
-    let mut h = HarnessBuilder::new(&root, &Pazi, shell)
-        .finish();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
     let a_dir = a_dir_path.to_string_lossy();
@@ -299,4 +298,39 @@ fn it_pipes_shell(shell: &Shell) {
     let last_dir = tail.split("\t").nth(1).take().unwrap();
     assert_eq!("0", h.run_cmd_with_status("z --pipe 'tail -n 1'"));
     assert_eq!(last_dir, h.run_cmd("pwd"));
+}
+
+#[test]
+fn it_can_do_interactive_selection() {
+    for shell in &Pazi.supported_shells() {
+        println!("shell: {}", shell.name());
+        it_can_do_interactive_selection_shell(shell);
+    }
+}
+
+fn it_can_do_interactive_selection_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path().canonicalize().unwrap();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
+
+    let root_dir = root.to_string_lossy();
+    let a_dir_path = root.join("a/tmp");
+    let b_dir_path = root.join("b/tmp");
+    let a_dir = a_dir_path.to_string_lossy();
+    let b_dir = b_dir_path.to_string_lossy();
+
+    h.create_dir(&a_dir);
+    h.create_dir(&b_dir);
+    h.visit_dir(&a_dir);
+    h.visit_dir(&b_dir);
+    h.visit_dir(&root_dir);
+
+    let items = h.interactive_list("");
+    assert_eq!(items.len(), 3);
+    let mut interactive_dirs: Vec<_> = items.iter().map(|item| item.1.clone()).collect();
+    interactive_dirs.sort();
+    let mut expected_dirs = vec![root_dir, a_dir, b_dir];
+    expected_dirs.sort();
+
+    assert_eq!(interactive_dirs, expected_dirs);
 }
