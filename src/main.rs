@@ -32,7 +32,7 @@ use std::env;
 use std::path::PathBuf;
 
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
-use crate::frecent_paths::PathFrecency;
+use crate::frecent_paths::{PathFrecency, FrecentPathIter};
 use crate::pazi_result::*;
 use crate::shells::SUPPORTED_SHELLS;
 
@@ -56,6 +56,9 @@ fn main() {
 // This should be replaced by a normal enum + const "as_str" for each variant once rust stable
 // supports const functions.
 macro_rules! SUBCOMMAND {
+    (Complete) => {
+        "complete"
+    };
     (Edit) => {
         "edit"
     };
@@ -74,9 +77,6 @@ macro_rules! SUBCOMMAND {
     (Visit) => {
         "visit"
     };
-    (Complete) => {
-        "complete"
-    }
 }
 
 fn _main() -> PaziResult {
@@ -89,6 +89,18 @@ fn _main() -> PaziResult {
                 .help("print debug information to stderr")
                 .long("debug")
                 .env("PAZI_DEBUG"),
+        )
+        .subcommand(
+            // used by the shell completion functions internally, it shouldn't be called directly
+            SUPPORTED_SHELLS.iter().fold(SubCommand::with_name("complete")
+                                         .setting(AppSettings::Hidden)
+                                         .setting(AppSettings::DisableHelpSubcommand)
+                                         .about("Returns possible completions for shells"), |subcommand, sh| subcommand.subcommand(
+                                             SubCommand::with_name(sh)
+                                                 .setting(AppSettings::Hidden)
+                                                 .setting(AppSettings::DisableHelpSubcommand)
+                                                 .arg(Arg::with_name("dir_target"))
+                                         ))
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Edit))
@@ -144,14 +156,6 @@ fn _main() -> PaziResult {
                 .setting(AppSettings::Hidden)
                 .setting(AppSettings::DisableHelpSubcommand)
                 .about("Add or visit a directory in the frecency database")
-                .arg(Arg::with_name("dir_target"))
-        )
-        .subcommand(
-            SubCommand::with_name(SUBCOMMAND!(Complete))
-            // used by the shell completion functions internally, it shouldn't be called directly
-                .setting(AppSettings::Hidden)
-                .setting(AppSettings::DisableHelpSubcommand)
-                .about("Returns possible completions for shells")
                 .arg(Arg::with_name("dir_target"))
         )
         // Code after this comment is deprecated in favor of .PaziSubcommand::Jump, but is left in
@@ -211,6 +215,9 @@ fn _main() -> PaziResult {
     }
 
     match flags.subcommand() {
+        (SUBCOMMAND!(Complete), Some(completion)) => {
+            return handle_completion(completion);
+        }
         (SUBCOMMAND!(Edit), Some(edit)) => {
             return handle_edit(edit);
         }
@@ -228,9 +235,6 @@ fn _main() -> PaziResult {
         }
         (SUBCOMMAND!(Visit), Some(visit)) => {
             return handle_visit(visit);
-        }
-        (SUBCOMMAND!(Complete), Some(completion)) => {
-            return handle_completion(completion);
         }
         unknown => debug!(
             "unrecognized subcommand: not an error for backwards compatibility: {:?}",
@@ -322,6 +326,32 @@ fn load_frecency() -> PathFrecency {
     let path = frecency_path().expect("could not get frecency db path");
 
     PathFrecency::load(&path)
+}
+
+fn handle_completion(cmd: &ArgMatches) -> PaziResult {
+    let mut frecency = load_frecency();
+
+    match cmd.subcommand() {
+        ("zsh", Some(sub_cmd)) => handle_zsh_completion(find_matches(&mut frecency, sub_cmd.value_of("dir_target"))),
+        ("bash", Some(_cmd)) => println!("bash not supported yet"),
+        ("fish", Some(_cmd)) => println!("fish not supported yet"),
+        _ => unreachable!("completion for unknown shell"),
+    }
+    PaziResult::Success
+}
+
+pub fn find_matches<'a>(frecency: &'a mut PathFrecency, dir_target: Option<&str>) -> FrecentPathIter<'a> {
+    match dir_target {
+        Some(to) => frecency.directory_matches(to),
+        None => frecency.items_with_frecency(),
+    }
+}
+
+pub fn handle_zsh_completion(matching_dirs: FrecentPathIter) {
+    for el in matching_dirs {
+        let str_val = format!("{:.5}", (el.1 * 100f64));
+        println!("{}:{}", el.0, str_val);
+    }
 }
 
 fn handle_edit(cmd: &ArgMatches) -> PaziResult {
@@ -504,22 +534,6 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
         // there are enough characters.
         let str_val = format!("{:.5}", (el.1 * 100f64));
         println!("{:.5}\t{}", str_val, el.0);
-    }
-
-    PaziResult::Success
-}
-
-fn handle_completion(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = load_frecency();
-
-    let matches = match cmd.value_of("dir_target") {
-        Some(to) => frecency.directory_matches(to),
-        None => frecency.items_with_frecency(),
-    };
-
-    for el in matches {
-        let str_val = format!("{:.5}", (el.1 * 100f64));
-        println!("{}:{}", el.0, str_val);
     }
 
     PaziResult::Success
