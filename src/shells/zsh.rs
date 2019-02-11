@@ -44,8 +44,11 @@ _pazi_cd() {
   _describe -V -t pazi-dirs 'pazi' suggestions
 }
 
-compdef _pazi_cd pazi_cd 'pazi jump'
-zstyle ':completion::complete:pazi_cd:*:pazi-dirs' matcher 'l:|=* r:|=*'
+if whence compdef>/dev/null; then
+  compdef _pazi_cd pazi_cd 'pazi jump'
+  zstyle ':completion::complete:pazi_cd:*:pazi-dirs' matcher 'l:|=* r:|=*'
+fi
+
 "#,
         )
     }
