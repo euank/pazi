@@ -40,7 +40,7 @@ alias z='pazi_cd'
 
 _pazi_cd() {
   CURRENTWORD="${LBUFFER/* /}${RBUFFER/ */}"
-  local suggestions=(${(f)"$(pazi complete zsh $CURRENTWORD)"})
+  local suggestions=(${(f)"$(pazi complete zsh -- $CURRENTWORD)"})
   _describe -V -t pazi-dirs 'pazi' suggestions
 }
 
