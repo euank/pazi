@@ -45,6 +45,9 @@ if command -v pazi &>/dev/null; then
 fi
 ```
 
+Note: The init should be added after `autoload -Uz compinit; compinit;`
+has been called since `pazi init zsh` initializes completion for the `z` command.
+
 Or if you are a fish user, add the following to your `config.fish`
 
 ```sh

@@ -37,7 +37,19 @@ pazi_cd() {
     esac
 }
 alias z='pazi_cd'
-"#
+
+_pazi_cd() {
+  CURRENTWORD="${LBUFFER/* /}${RBUFFER/ */}"
+  local suggestions=(${(f)"$(pazi complete zsh -- $CURRENTWORD)"})
+  _describe -V -t pazi-dirs 'pazi' suggestions
+}
+
+if whence compdef>/dev/null; then
+  compdef _pazi_cd pazi_cd 'pazi jump'
+  zstyle ':completion::complete:pazi_cd:*:pazi-dirs' matcher 'l:|=* r:|=*'
+fi
+
+"#,
         )
     }
 }
