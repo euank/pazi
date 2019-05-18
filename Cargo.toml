@@ -1,6 +1,6 @@
 [package]
 name = "pazi"
-version = "0.2.0"
+version = "0.3.0"
 description = "A fast autojump helper"
 authors = ["Euan Kemp <euank@euank.com>"]
 homepage = "https://github.com/euank/pazi"

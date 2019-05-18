@@ -1,3 +1,11 @@
+## v0.3.0 - 2019-05-17
+
+This release adds support for zsh autocompletion.
+
+#### Features
+
+* `pazi init zsh` includes autocompletion code now!
+
 ## v0.2.0 - 2018-11-13
 
 This release adds support for the [fish shell](https://fishshell.com/)!
