@@ -63,11 +63,13 @@ impl<'a> Matcher for PathComponentMatcher<'a> {
                     let attv = v * weight;
                     res = match res {
                         None => Some(attv),
-                        Some(existing) => if attv > existing {
-                            Some(attv)
-                        } else {
-                            Some(existing)
-                        },
+                        Some(existing) => {
+                            if attv > existing {
+                                Some(attv)
+                            } else {
+                                Some(existing)
+                            }
+                        }
                     }
                 }
                 None => {}
