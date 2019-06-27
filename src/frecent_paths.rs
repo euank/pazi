@@ -210,7 +210,7 @@ impl PathFrecency {
         let pc_ci_em = PathComponentMatcher::new(&ci_em);
         let ci_sm = CaseInsensitiveMatcher::new(&sm);
         let pc_ci_sm = PathComponentMatcher::new(&ci_sm);
-        let matchers: Vec<&Matcher> = vec![
+        let matchers: Vec<&dyn Matcher> = vec![
             &ExactMatcher {},
             &ci_em,
             &pc_em,

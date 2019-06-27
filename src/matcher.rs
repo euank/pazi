@@ -33,10 +33,10 @@ impl Matcher for SubstringMatcher {
     }
 }
 
-pub struct PathComponentMatcher<'a>(&'a Matcher);
+pub struct PathComponentMatcher<'a>(&'a dyn Matcher);
 
 impl<'a> PathComponentMatcher<'a> {
-    pub fn new(base: &'a Matcher) -> Self {
+    pub fn new(base: &'a dyn Matcher) -> Self {
         PathComponentMatcher(base)
     }
 }
@@ -81,14 +81,14 @@ impl<'a> Matcher for PathComponentMatcher<'a> {
 pub struct TransformedMatcher<'a> {
     input_transformation: fn(input: &str) -> String,
     search_transformation: fn(input: &str) -> String,
-    matcher: &'a Matcher,
+    matcher: &'a dyn Matcher,
     attenuation: f64,
 }
 
 pub type CaseInsensitiveMatcher<'a> = TransformedMatcher<'a>;
 
 impl<'a> CaseInsensitiveMatcher<'a> {
-    pub fn new(base: &'a Matcher) -> Self {
+    pub fn new(base: &'a dyn Matcher) -> Self {
         fn transformer(input: &str) -> String {
             input.to_owned().to_lowercase()
         }
