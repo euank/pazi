@@ -9,4 +9,4 @@
 	url = https://github.com/rupa/z
 [submodule "tests/testbins/jump"]
 	path = tests/testbins/jump
-	url = https://github.com/euank/jump
+	url = https://github.com/gsamokovarov/jump

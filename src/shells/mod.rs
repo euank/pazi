@@ -7,7 +7,7 @@ use self::fish::Fish;
 
 pub const SUPPORTED_SHELLS: [&str; 3] = ["zsh", "bash", "fish"];
 
-pub fn from_name(name: &str) -> Option<&Shell> {
+pub fn from_name(name: &str) -> Option<&dyn Shell> {
     match name {
         "bash" => Some(&Bash),
         "zsh" => Some(&Zsh),
