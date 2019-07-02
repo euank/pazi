@@ -6,10 +6,10 @@ set -eux
 
 if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
   # setup cgroupsv2
-  mount -o remount,rw /sys/fs/cgroup
+  sudo mount -o remount,rw /sys/fs/cgroup
   if ! [[ -d "/sys/fs/cgroup/unified" ]]; then
-    mkdir -p /sys/fs/cgroup/unified
-    mount -t cgroup2 none /sys/fs/cgroup/unified
+    sudo mkdir -p /sys/fs/cgroup/unified
+    sudo mount -t cgroup2 none /sys/fs/cgroup/unified
   fi
 else
   # macos

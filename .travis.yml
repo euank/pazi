@@ -27,7 +27,7 @@ env:
   - RUST_BACKTRACE=1
 
 before_script:
-- sudo -E ./tests/.travis/hack.sh
+- ./tests/.travis/hack.sh
 - eval "$(gimme 1.12)" # golang for 'jump' benchmarks
 
 script:
