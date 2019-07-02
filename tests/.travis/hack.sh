@@ -16,5 +16,6 @@ else
   # upstream travis doesn't update brew and brew refuses to install packages if
   # we don't upgrade it :(
   brew update --quiet
-  brew install bash fish gimme python3 zsh
+  brew install bash fish gimme zsh
+  brew upgrade python # it complains about 'brew install python3'
 fi
