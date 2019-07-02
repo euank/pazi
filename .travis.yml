@@ -1,4 +1,5 @@
 dist: xenial
+osx_image: xcode8.3
 language: rust
 branches:
   only:
@@ -34,7 +35,7 @@ env:
 
 before_script:
 - sudo -E ./tests/.travis/hack.sh
-- eval "$(gimme 1.11)" # golang for 'jump' benchmarks
+- eval "$(gimme 1.12)" # golang for 'jump' benchmarks
 
 script:
 - cargo build --verbose --examples
