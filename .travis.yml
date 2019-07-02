@@ -21,13 +21,6 @@ addons:
     - fish
     - python3
     - zsh
-  homebrew:
-    packages:
-    - bash
-    - fish
-    - gimme
-    - python3
-    - zsh
 
 env:
   global:
