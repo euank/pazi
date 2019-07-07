@@ -58,6 +58,11 @@ end
 
 Finally, re-launch the shell and start zapping around :)
 
+## Using pazi with fzf
+
+Pazi may be used with "fuzzy finders" like fzf as described [here](docs/usage/pipe.md).
+
+
 ## What makes pazi different from *X*
 
 There are several autojump utilities, including [fasd][fasd] (or a better
