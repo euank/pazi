@@ -33,8 +33,11 @@ where
 
     let take_stdin = process.stdin.take();
     let mut stdin = take_stdin.unwrap();
+    let mut input_lines = Vec::new();
     for i in 0..opts.len() {
-        match write!(stdin, "{}\t{}\t{}\n", opts.len() - i, opts[i].1, opts[i].0) {
+        let line = format!("{}\t{}", opts[i].1, opts[i].0);
+        input_lines.push(line.clone());
+        match write!(stdin, "{}\n", line) {
             Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
                 break;
             }
@@ -46,17 +49,26 @@ where
     process.wait()?;
     let mut s = String::new();
     process.stdout.unwrap().read_to_string(&mut s)?;
-    // assume the selected item is of the same format we printed
-    let s = match s.splitn(3, "\t").nth(2) {
+    let line = match s.split("\n").next() {
         None => {
             return Err(PipeError::String(
                 "pipe program did not produce a line from its input".to_string(),
             ));
         }
-        Some(s) => s,
+        Some(line) => line,
     };
-
-    Ok(s.to_string())
+    // find the input line for this output
+    for (ndx, orig_line) in input_lines.iter().enumerate() {
+        debug!("{} == {}", orig_line, line);
+        if orig_line == line {
+            // Intentionally return the `opts` version of it since we may end up mutating things
+            // for display soon.
+            return Ok(opts[ndx].0.to_string());
+        }
+    }
+    return Err(PipeError::String(
+            "pipe program did not produce a line from its input".to_string(),
+    ));
 }
 
 #[derive(Debug)]
