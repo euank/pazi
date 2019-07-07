@@ -25,6 +25,7 @@ mod frecency;
 mod frecent_paths;
 mod importers;
 mod interactive;
+mod pipe;
 mod matcher;
 mod shells;
 
@@ -493,7 +494,7 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
     } else if let Some(pipe) = cmd.value_of("pipe") {
         // TODO: this restricts use of valid program :(
         let pipe_with_args = pipe.split_whitespace().collect();
-        match interactive::pipe(matches, pipe_with_args) {
+        match pipe::pipe(matches, pipe_with_args) {
             Ok(el) => {
                 print!("{}", el);
                 PaziResult::SuccessDirectory
