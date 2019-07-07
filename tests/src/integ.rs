@@ -253,3 +253,40 @@ fn it_handles_things_that_look_like_subcommands_shell(shell: &Shell) {
         h.delete_dir(&dir_name);
     }
 }
+
+#[test]
+fn it_pipes() {
+    for shell in &Pazi.supported_shells() {
+        it_pipes_shell(shell);
+    }
+}
+
+fn it_pipes_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path().canonicalize().unwrap();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
+
+    let root_dir = root.to_string_lossy();
+    let a_dir_path = root.join("a/tmp");
+    let b_dir_path = root.join("b/tmp");
+    let a_dir = a_dir_path.to_string_lossy();
+    let b_dir = b_dir_path.to_string_lossy();
+
+    h.create_dir(&a_dir);
+    h.create_dir(&b_dir);
+    h.visit_dir(&a_dir);
+    h.visit_dir(&b_dir);
+    h.visit_dir(&a_dir);
+    h.visit_dir(&b_dir);
+    // visit a once more so it's at the head
+    h.visit_dir(&a_dir);
+    h.visit_dir(&root_dir);
+    // Visiting b thrice makes it a better jump target, so head -n 1 should pick it
+    assert_eq!("0", h.run_cmd_with_status("z --pipe 'head -n 1'"));
+    assert_eq!(a_dir, h.run_cmd("pwd"));
+    h.visit_dir(&root_dir);
+    let tail = h.run_cmd("pazi view | tail -n 1");
+    let last_dir = tail.split("\t").nth(1).take().unwrap();
+    assert_eq!("0", h.run_cmd_with_status("z --pipe 'tail -n 1'"));
+    assert_eq!(last_dir, h.run_cmd("pwd"));
+}
