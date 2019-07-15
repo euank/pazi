@@ -18,7 +18,7 @@ features = ["color", "vec_map"]
 
 [dependencies]
 crossbeam-channel = "0.3"
-directories = "~1"
+directories = "~2"
 env_logger = "~0.6"
 libc = "~0.2"
 log = "~0.4"
