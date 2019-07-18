@@ -500,7 +500,8 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
                 PaziResult::SuccessDirectory
             }
             Err(e) => {
-                panic!("err: {}", e);
+                print!("{}", e);
+                return PaziResult::Error;
             }
         }
     } else if let Some((path, _)) = matches.next() {
