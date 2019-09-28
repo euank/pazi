@@ -88,11 +88,13 @@ where
             for e in &self.frecency {
                 min_entry = match min_entry {
                     None => Some(e),
-                    Some(old_min) => if old_min.1 > e.1 {
-                        Some(e)
-                    } else {
-                        Some(old_min)
-                    },
+                    Some(old_min) => {
+                        if old_min.1 > e.1 {
+                            Some(e)
+                        } else {
+                            Some(old_min)
+                        }
+                    }
                 };
             }
             match min_entry {

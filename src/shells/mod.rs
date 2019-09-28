@@ -1,9 +1,9 @@
 mod bash;
-mod zsh;
 mod fish;
+mod zsh;
 use self::bash::Bash;
-use self::zsh::Zsh;
 use self::fish::Fish;
+use self::zsh::Zsh;
 
 pub const SUPPORTED_SHELLS: [&str; 3] = ["zsh", "bash", "fish"];
 

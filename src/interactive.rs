@@ -13,6 +13,17 @@ pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String,
 where
     I: Iterator<Item = (String, f64)>,
 {
+    // if either aren't a tty, we can't really do an interactive selection, just print stuff
+    // out.
+    let istty = unsafe {
+        let stdout_tty = libc::isatty(libc::STDOUT_FILENO);
+        let stdin_tty = libc::isatty(libc::STDIN_FILENO);
+        stdout_tty != 0 && stdin_tty != 0
+    };
+    if !istty {
+        return Err(FilterError::NoSelection);
+    }
+
     // So, this is a massive abstraction leak, but unix signals are icky so it's not really
     // surprising.
     // Because we're popping over to an alternative screen buffer, we need to restore the teriminal
@@ -83,7 +94,6 @@ where
     };
 }
 
-
 fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
     let (s, r) = channel::bounded(100);
     let signals = signal_hook::iterator::Signals::new(signals)?;
@@ -95,6 +105,7 @@ fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
     });
     Ok(r)
 }
+
 
 #[derive(Debug)]
 pub enum FilterError {

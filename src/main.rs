@@ -25,16 +25,17 @@ mod frecency;
 mod frecent_paths;
 mod importers;
 mod interactive;
+mod pipe;
 mod matcher;
 mod shells;
 
 use std::env;
 use std::path::PathBuf;
 
-use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
-use crate::frecent_paths::{PathFrecency, FrecentPathIter};
+use crate::frecent_paths::{FrecentPathIter, PathFrecency};
 use crate::pazi_result::*;
 use crate::shells::SUPPORTED_SHELLS;
+use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
@@ -92,23 +93,29 @@ fn _main() -> PaziResult {
         )
         .subcommand(
             // used by the shell completion functions internally, it shouldn't be called directly
-            SUPPORTED_SHELLS.iter().fold(SubCommand::with_name("complete")
-                                         .setting(AppSettings::Hidden)
-                                         .setting(AppSettings::DisableHelpSubcommand)
-                                         .about("Returns possible completions for shells"), |subcommand, sh| subcommand.subcommand(
-                                             SubCommand::with_name(sh)
-                                                 .setting(AppSettings::Hidden)
-                                                 .setting(AppSettings::DisableHelpSubcommand)
-                                                 .arg(Arg::with_name("dir_target"))
-                                         ))
+            SUPPORTED_SHELLS.iter().fold(
+                SubCommand::with_name("complete")
+                    .setting(AppSettings::Hidden)
+                    .setting(AppSettings::DisableHelpSubcommand)
+                    .about("Returns possible completions for shells"),
+                |subcommand, sh| {
+                    subcommand.subcommand(
+                        SubCommand::with_name(sh)
+                            .setting(AppSettings::Hidden)
+                            .setting(AppSettings::DisableHelpSubcommand)
+                            .arg(Arg::with_name("dir_target")),
+                    )
+                },
+            ),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Edit))
                 .about("Edit the frecency database")
                 .usage("pazi edit [<filter>]")
-                .arg(Arg::with_name("filter").help(
-                    "filter matches down further and edit that subset"
-                )),
+                .arg(
+                    Arg::with_name("filter")
+                        .help("filter matches down further and edit that subset"),
+                ),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Init))
@@ -139,16 +146,19 @@ fn _main() -> PaziResult {
                         .long("interactive")
                         .short("i"),
                 )
-                .arg(Arg::with_name("dir_target"))
+                .arg(
+                    Arg::with_name("pipe")
+                        .help("use the specified program to select an interactive filter item")
+                        .takes_value(true)
+                        .long("pipe"),
+                )
+                .arg(Arg::with_name("dir_target")),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(View))
                 .setting(AppSettings::DisableHelpSubcommand)
                 .about("View the frecency database")
-                .arg(
-                    Arg::with_name("dir_target")
-                        .help("filter matches down further")
-                )
+                .arg(Arg::with_name("dir_target").help("filter matches down further")),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Visit))
@@ -156,7 +166,7 @@ fn _main() -> PaziResult {
                 .setting(AppSettings::Hidden)
                 .setting(AppSettings::DisableHelpSubcommand)
                 .about("Add or visit a directory in the frecency database")
-                .arg(Arg::with_name("dir_target"))
+                .arg(Arg::with_name("dir_target")),
         )
         // Code after this comment is deprecated in favor of .PaziSubcommand::Jump, but is left in
         // temporarily for backwards compatibility. Remove before 1.0
@@ -194,7 +204,7 @@ fn _main() -> PaziResult {
         //
         // $ z -i asdf
         // $ z asdf -i
-        // 
+        //
         // A positional argument was the only way I could figure out to do that without writing
         // more shell in init.
         .arg(Arg::with_name("dir_target").hidden(true))
@@ -332,7 +342,9 @@ fn handle_completion(cmd: &ArgMatches) -> PaziResult {
     let mut frecency = load_frecency();
 
     match cmd.subcommand() {
-        ("zsh", Some(sub_cmd)) => handle_zsh_completion(find_matches(&mut frecency, sub_cmd.value_of("dir_target"))),
+        ("zsh", Some(sub_cmd)) => {
+            handle_zsh_completion(find_matches(&mut frecency, sub_cmd.value_of("dir_target")))
+        }
         ("bash", Some(_cmd)) => println!("bash not supported yet"),
         ("fish", Some(_cmd)) => println!("fish not supported yet"),
         _ => unreachable!("completion for unknown shell"),
@@ -340,7 +352,10 @@ fn handle_completion(cmd: &ArgMatches) -> PaziResult {
     PaziResult::Success
 }
 
-pub fn find_matches<'a>(frecency: &'a mut PathFrecency, dir_target: Option<&str>) -> FrecentPathIter<'a> {
+pub fn find_matches<'a>(
+    frecency: &'a mut PathFrecency,
+    dir_target: Option<&str>,
+) -> FrecentPathIter<'a> {
     match dir_target {
         Some(to) => frecency.directory_matches(to),
         None => frecency.items_with_frecency(),
@@ -473,6 +488,19 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
             }
             Err(e) => {
                 println!("{}", e);
+                return PaziResult::Error;
+            }
+        }
+    } else if let Some(pipe) = cmd.value_of("pipe") {
+        // TODO: this restricts use of valid program :(
+        let pipe_with_args = pipe.split_whitespace().collect();
+        match pipe::pipe(matches, pipe_with_args) {
+            Ok(el) => {
+                print!("{}", el);
+                PaziResult::SuccessDirectory
+            }
+            Err(e) => {
+                print!("{}", e);
                 return PaziResult::Error;
             }
         }

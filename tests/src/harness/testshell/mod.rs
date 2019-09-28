@@ -84,6 +84,10 @@ impl vte::Perform for VTEData {
             '\t' => {
                 self.print('\t');
             }
+            '\x0b' => {
+                // vertical tab
+                self.print('\x0b');
+            }
             _ => {
                 println!("[VTEData execute]: ignoring {}", byte);
             }
@@ -218,7 +222,6 @@ impl TestShell {
                     {
                         // Exactly equal to PS1 means that there's a new blank PS1 prompt
                         // Either we just started up, or a command just finished.
-                        // not startup, sometihng finished
                         write_command_out
                             .send(current_command_output.join("\n"))
                             .unwrap();

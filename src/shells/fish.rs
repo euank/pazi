@@ -12,22 +12,22 @@ function pazi_cd
         return $status
     else
         set -l res (env "#,
-                        PAZI_EXTENDED_EXIT_CODES_ENV!(),
-                        r#"=1 pazi jump $argv)
+            PAZI_EXTENDED_EXIT_CODES_ENV!(),
+            r#"=1 pazi jump $argv)
         set -l ret $status
         switch $ret
         case "#,
-                EXIT_CODE!(SUCCESS),
-                r#"; echo $res
+            EXIT_CODE!(SUCCESS),
+            r#"; echo $res
         case "#,
-                EXIT_CODE!(SUCCESS_DIR),
-                r#"; cd $res
+            EXIT_CODE!(SUCCESS_DIR),
+            r#"; cd $res
         case "#,
-                EXIT_CODE!(ERROR),
-                r#"; echo $res; and return 1
+            EXIT_CODE!(ERROR),
+            r#"; echo $res; and return 1
         case "#,
-                EXIT_CODE!(ERROR_NO_INPUT),
-                r#"; return 1
+            EXIT_CODE!(ERROR_NO_INPUT),
+            r#"; return 1
         case '*'
             echo $res; and return $ret
         end

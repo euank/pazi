@@ -2,8 +2,8 @@
 // It does things like the messyness of checking for a directory's existence and such.
 
 use crate::frecency::{descending_frecency, Frecency};
-use libc;
 use crate::matcher::*;
+use libc;
 use rmp_serde;
 use serde;
 use serde::Serialize;

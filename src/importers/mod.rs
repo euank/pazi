@@ -1,5 +1,5 @@
-use directories;
 use crate::frecent_paths::PathFrecency;
+use directories;
 use std::env;
 use std::fs;
 use std::io::BufRead;
