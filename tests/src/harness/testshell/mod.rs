@@ -139,7 +139,7 @@ impl TestShell {
             if unsafe { libc::geteuid() } != 0 {
                 panic!("cgroup pid tracking requires root");
             }
-            let scope = format!("test_shell_{}", rand::thread_rng().next_u64());
+            let scope = format!("test_shell_{}", rand::thread_rng().gen::<u64>());
             let unified_path = format!("/sys/fs/cgroup/unified/{}.slice/{}.scope", cg, scope);
             fs::create_dir_all(&unified_path).expect("could not create cg directory");
             cgpath = Some(unified_path);
