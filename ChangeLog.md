@@ -1,3 +1,16 @@
+## v0.4.0 - 2019-10-28
+
+This release adds the `--pipe` flag to `z`, which allows using programs like
+[fzf](https://github.com/junegunn/fzf) with pazi.
+
+For more information, please see the
+[docs](https://github.com/euank/pazi/blob/v0.4.0/docs/usage/pipe.md) for this
+feature.
+
+#### Features
+
+* `z --pipe=<pipe program>` has been added! See the docs folder for usage information.
+
 ## v0.3.0 - 2019-05-17
 
 This release adds support for zsh autocompletion.
