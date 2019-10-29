@@ -13,14 +13,12 @@ pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String,
 where
     I: Iterator<Item = (String, f64)>,
 {
-    // if either aren't a tty, we can't really do an interactive selection, just print stuff
-    // out.
-    let istty = unsafe {
-        let stdout_tty = libc::isatty(libc::STDOUT_FILENO);
-        let stdin_tty = libc::isatty(libc::STDIN_FILENO);
-        stdout_tty != 0 && stdin_tty != 0
+    // if stdin isn't a tty, we can't really do an interactive selection, just print stuff out.
+    // stdout is already a tty because `_main` uses termion to give us a tty for stdout.
+    let stdin_tty = unsafe {
+        libc::isatty(libc::STDIN_FILENO)
     };
-    if !istty {
+    if stdin_tty == 0 {
         return Err(FilterError::NoSelection);
     }
 
@@ -105,7 +103,6 @@ fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
     });
     Ok(r)
 }
-
 
 #[derive(Debug)]
 pub enum FilterError {
