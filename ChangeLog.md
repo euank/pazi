@@ -1,3 +1,11 @@
+## v0.4.1 - 2019-10-29
+
+This is a bugfix release fixing a notable issue in v0.4.0
+
+### Bug Fixes
+
+* Fix a bug, present only inv v0.4.0, which caused `z -i` to reliably error out.
+
 ## v0.4.0 - 2019-10-28
 
 This release adds the `--pipe` flag to `z`, which allows using programs like
