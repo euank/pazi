@@ -10,7 +10,7 @@ impl Shell for Bash {
 __pazi_add_dir() {
     # TODO: should pazi keep track of this itself in its datadir?
     if [[ "${__PAZI_LAST_PWD:-}" != "${PWD}" ]]; then
-        pazi visit "${PWD}"
+        { pazi visit "${PWD}" & } 2>/dev/null; disown
     fi
     __PAZI_LAST_PWD="${PWD}"
 }

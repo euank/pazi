@@ -7,7 +7,7 @@ impl Shell for Zsh {
         concat!(
             r#"
 __pazi_add_dir() {
-    pazi visit "${PWD}"
+    pazi visit "${PWD}" &!
 }
 
 autoload -Uz add-zsh-hook

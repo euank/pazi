@@ -36,7 +36,7 @@ end
 
 function __pazi_preexec --on-variable PWD
     status --is-command-substitution; and return
-    pazi visit (pwd)
+    pazi visit (pwd) &; disown
 end
 
 alias z 'pazi_cd'
