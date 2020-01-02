@@ -129,6 +129,7 @@ impl TestShell {
     pub fn new(cmd: shells::ShellCmd, ps1: &str) -> Self {
         Self::new_internal(cmd, ps1, None)
     }
+
     pub fn new_in_cgroup(cmd: shells::ShellCmd, ps1: &str, cgroup: &str) -> Self {
         Self::new_internal(cmd, ps1, Some(cgroup))
     }
@@ -277,8 +278,36 @@ impl TestShell {
 
     pub fn wait_children(&mut self) {
         if self.cgroup.is_none() {
-            panic!("can only wait for children on testshells created with cgroups");
+            self.wait_children_pgrep();
+        } else {
+            self.wait_children_cgroup()
         }
+    }
+
+    fn wait_children_pgrep(&mut self) {
+        // a pgrep based implementation which is slower than the group based implementation.
+        // It's used so integ tests can run without cgroups (e.g. on macos), and as a nice side
+        // benefit allows them to run without root on linux.
+        // Benchmarks should use the cgroup method for performance reasons.
+        loop {
+            let child_pids = Command::new("pgrep").args(vec!["-P", &format!("{}", self.pid)]).output().unwrap();
+            // don't check status because 'pgrep -P $x' returns '1' if it matches no pids, which is
+            // a success case for us
+            if child_pids.stderr.len() > 0 {
+                panic!("unable to wait for children. Error running 'pgrep -P {}': {}", self.pid, String::from_utf8_lossy(&child_pids.stderr));
+            }
+            let pids: Vec<i32> = String::from_utf8(child_pids.stdout).unwrap().lines().map(str::parse).collect::<Result<Vec<_>, _>>().unwrap();
+            if pids.len() == 0 {
+                return;
+            };
+            unsafe {
+                let mut status = 0;
+                libc::waitpid(pids[0], &mut status, libc::WEXITED);
+            };
+        }
+    }
+
+    fn wait_children_cgroup(&mut self) {
         // TODO: don't assume unified
         let cgprocfile = format!("{}/cgroup.procs", self.cgroup.clone().unwrap());
 

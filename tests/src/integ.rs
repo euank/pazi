@@ -56,7 +56,8 @@ fn it_jumps_to_more_frecent_items() {
 fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path().canonicalize().unwrap();
-    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell)
+        .finish();
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
     let a_dir = a_dir_path.to_string_lossy();
@@ -121,6 +122,7 @@ fn it_imports_from_fasd_shell(shell: &Shell) {
 #[test]
 fn it_ignores_dead_dirs_on_cd() {
     for shell in &Pazi.supported_shells() {
+        println!("running test for {}", shell.name());
         it_ignores_dead_dirs_on_cd_shell(shell);
     }
 }
@@ -132,10 +134,15 @@ fn it_ignores_dead_dirs_on_cd_shell(shell: &Shell) {
 
     h.create_dir(&root.join("1/tmp").to_string_lossy());
     h.create_dir(&root.join("2/tmp").to_string_lossy());
+    // visited between other dirs to ensure a frecency boost happens; in some shells cd-ing to the
+    // same place twice has no impact on frecency
+    h.create_dir(&root.join("3/dummy").to_string_lossy());
 
     h.visit_dir(&root.join("1/tmp").to_string_lossy());
     h.visit_dir(&root.join("2/tmp").to_string_lossy());
+    h.visit_dir(&root.join("3/dummy").to_string_lossy());
     h.visit_dir(&root.join("2/tmp").to_string_lossy());
+    h.visit_dir(&root.join("3/dummy").to_string_lossy());
     h.visit_dir(&root.join("2/tmp").to_string_lossy());
 
     assert_eq!(h.jump("tmp"), root.join("2/tmp").to_string_lossy());
@@ -148,6 +155,7 @@ fn it_ignores_dead_dirs_on_cd_shell(shell: &Shell) {
 #[test]
 fn it_prints_list_on_lonely_z() {
     for shell in &Pazi.supported_shells() {
+        println!("shell: {}", shell.name());
         it_prints_list_on_lonely_z_shell(shell);
     }
 }
@@ -198,6 +206,7 @@ PROMPT_COMMAND='printf -v MY_PROMPT_OUT "\033k%s\033\\" "${MY_PROMPT}"'
 #[test]
 fn it_handles_help_output() {
     for shell in &Pazi.supported_shells() {
+        println!("shell: {}", shell.name());
         it_handles_help_output_shell(shell);
     }
 }
@@ -222,6 +231,7 @@ fn it_handles_help_output_shell(shell: &Shell) {
 #[test]
 fn it_handles_things_that_look_like_subcommands() {
     for shell in &Pazi.supported_shells() {
+        println!("shell: {}", shell.name());
         it_handles_things_that_look_like_subcommands_shell(shell);
     }
 }

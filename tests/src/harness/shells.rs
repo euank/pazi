@@ -36,7 +36,7 @@ impl Shell {
 set -e
 {preinit}
 export PS1="{ps1}" # sep so we know when our commands finished
-export PATH=$PATH:$(dirname "{bin_path}")
+export PATH=$(dirname "{bin_path}"):$PATH
 {init}
 "#,
                 bin_path = autojump.bin_path(),
@@ -50,7 +50,7 @@ set -e
 unsetopt zle
 {preinit}
 export PS1="{ps1}" # sep so we know when our commands finished
-export PATH=$PATH:$(dirname "{bin_path}")
+export PATH=$(dirname "{bin_path}"):$PATH
 {init}
 "#,
                 bin_path = autojump.bin_path(),
@@ -66,7 +66,7 @@ set fish_greeting
 function fish_prompt
     echo -n "{ps1}" # sep so we know when our commands finished
 end
-set PATH $PATH (dirname {bin_path})
+set PATH (dirname {bin_path}) $PATH
 {init}
 "#,
                 bin_path = autojump.bin_path(),
@@ -83,6 +83,15 @@ set PATH $PATH (dirname {bin_path})
                 // completions update background process
                 fs::create_dir_all(root.join("home/pazi/.local/share/fish/generated_completions"))
                     .unwrap();
+            }
+            Shell::Bash => {
+                // hack: create .hushlogin because ubuntu spams in the /etc/bash.bashrc file.
+                // Unfortunately, using `--rcfile` on bash doesn't fix this, or else that would be
+                // a much more elegant solution (see
+                // https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=516152 for why --rcfile
+                // doesn't get around that spam).
+                fs::create_dir_all(root.join("home/pazi")).unwrap();
+                fs::File::create(root.join("home/pazi/.hushlogin")).unwrap();
             }
             _ => {
                 fs::create_dir_all(root.join("home/pazi")).unwrap();

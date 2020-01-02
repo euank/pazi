@@ -9,7 +9,7 @@ integ-nightly: pazi jump
 
 .PHONY: integ-all
 integ-all: pazi jump
-	test_bin=$$($(CARGO_BIN) test --no-run --features=nightly,cgroups2 --message-format=json | jq -r "select(.profile.test == true) | .filenames[]") ;\
+	test_bin=$$($(CARGO_BIN) test --no-run --features=nightly --message-format=json | jq -r "select(.profile.test == true) | .filenames[]") && \
 		sudo CARGO_MANIFEST_DIR=$$PWD $$test_bin --test-threads=1
 
 .PHONY: bench
@@ -18,7 +18,7 @@ bench: pazi jump
 
 .PHONY: bench-all
 bench-all: pazi jump
-	sudo -E $(CARGO_BIN) bench --features=nightly,cgroups2
+	sudo -E $(CARGO_BIN) bench --features=nightly
 
 .PHONY: jump
 jump:
