@@ -100,7 +100,11 @@ impl<'a> Harness<'a> {
             }
         };
 
-        self.testshell.run(&cmd)
+        let res = self.testshell.run(&cmd).to_string();
+        // We have to wait here too because jumping to a directory also results in an invocation of
+        // pazi visit
+        self.wait_children();
+        res
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {
