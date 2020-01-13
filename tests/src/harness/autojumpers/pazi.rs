@@ -21,7 +21,7 @@ impl Autojumper for Pazi {
     fn init_for(&self, shell: &Shell) -> String {
         match shell {
             &Shell::Bash => format!(r#"set -u; eval "$(pazi init {})""#, shell.name()),
-            &Shell::Zsh => format!(r#"set -u; autoload -Uz compinit; compinit; eval "$(pazi init {})""#, shell.name()),
+            &Shell::Zsh => format!(r#"set -u; autoload -Uz compinit; compinit -u; eval "$(pazi init {})""#, shell.name()),
             &Shell::Fish => "status --is-interactive; and pazi init fish | source".to_string(),
         }
     }

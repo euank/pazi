@@ -27,13 +27,12 @@ fn main() {
             continue;
         }
         let parts = line.split(",").map(|el| el.trim()).collect::<Vec<_>>();
-        if parts.len() != 4 {
-            panic!("each csv line should have 4 parts");
+        if parts.len() != 3 {
+            panic!("each csv line should have 3 parts");
         }
         let bench_names = parts[0].trim().split(" ");
         let bench_jumpers = parts[1].trim().split(" ");
         let bench_shells = parts[2].trim().split(" ");
-        let bench_waits = parts[3].parse::<bool>().unwrap();
 
         for bench_name in bench_names {
             for jumper in bench_jumpers.clone() {
@@ -44,19 +43,14 @@ fn main() {
                         jumper.to_lowercase(),
                         shell.to_lowercase()
                     );
-                    let maybe_ignore = if bench_waits {
-                        "\n#[cfg_attr(not(feature = \"cgroups2\"), ignore)]"
-                    } else {
-                        ""
-                    };
                     code += format!(
                         r#"
-    #[bench]{4}
+    #[bench]
     fn {0}(b: &mut Bencher) {{
-        {1}(b, &{2}, &Shell::{3}, {5});
+        {1}(b, &{2}, &Shell::{3});
     }}
     "#,
-                        &fn_name, &bench_name, &jumper, &shell, maybe_ignore, bench_waits,
+                        &fn_name, &bench_name, &jumper, &shell,
                     )
                     .as_str();
                 }

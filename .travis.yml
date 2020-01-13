@@ -1,16 +1,19 @@
-dist: xenial
-osx_image: xcode9.2
 language: rust
 branches:
   only:
   - master
   - dev
-rust:
-  - stable
-  - nightly
-os:
-  - linux
-  - osx
+jobs:
+  include:
+  - os: linux
+    dist: xenial
+    rust: stable
+  - os: linux
+    dist: xenial
+    rust: nightly
+  - os: osx
+    osx_image: xcode9.2
+    rust: stable
 
 addons:
   apt:
@@ -34,9 +37,7 @@ script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
 # integ on stable
-# integ-nightly on osx nightly
-# integ-all on linux nightly
+# integ-nightly.cgroups on linux nightly
 - MAKE_TARGET="integ"
-- '[[ "${TRAVIS_RUST_VERSION}" == "nightly" ]] && MAKE_TARGET=integ-nightly || true'
-- '[[ "${TRAVIS_OS_NAME}-${TRAVIS_RUST_VERSION}" == "linux-nightly" ]] && MAKE_TARGET=integ-all || true'
+- 'if [[ "${TRAVIS_RUST_VERSION}" == "nightly" ]]; then MAKE_TARGET=integ-nightly-cgroups; fi'
 - cd tests && make $MAKE_TARGET

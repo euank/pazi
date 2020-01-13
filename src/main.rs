@@ -46,8 +46,9 @@ fn main() {
         Err(_) => false,
     };
     if extended_exit_codes {
-        debug!("using extended exit codes");
-        std::process::exit(res.extended_exit_code());
+        let exit_code = res.extended_exit_code();
+        debug!("using extended exit codes; exit {}", exit_code);
+        std::process::exit(exit_code);
     } else {
         std::process::exit(res.exit_code());
     }
@@ -590,7 +591,6 @@ fn intercept_ctrl_c() -> Result<(), ()> {
     // process group and make that the foreground process group.
     // That way, when ctrl-c sends a SIGINT, the only process
     // to receive it is Pazi.
-    //
     unsafe fn get_errno() -> *mut libc::c_int {
         #[cfg(target_os = "linux")]
         return libc::__errno_location();

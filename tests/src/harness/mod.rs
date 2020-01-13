@@ -26,7 +26,6 @@ pub struct HarnessBuilder<'a> {
     shell: &'a Shell,
     jumper: &'a Autojumper,
     preinit: Option<&'a str>,
-    cgroup: bool,
 }
 
 impl<'a> HarnessBuilder<'a> {
@@ -35,7 +34,6 @@ impl<'a> HarnessBuilder<'a> {
             root: root,
             shell: shell,
             jumper: jumper,
-            cgroup: false,
             preinit: None,
         }
     }
@@ -45,18 +43,12 @@ impl<'a> HarnessBuilder<'a> {
         self
     }
 
-    pub fn cgroup(mut self, cgroup: bool) -> Self {
-        self.cgroup = cgroup;
-        self
-    }
-
     pub fn finish(self) -> Harness<'a> {
         Harness::new(
             self.root,
             self.shell,
             self.jumper,
             self.preinit,
-            self.cgroup,
         )
     }
 }
@@ -65,15 +57,15 @@ impl<'a> Harness<'a> {
     fn new(
         root: &Path,
         shell: &'a Shell,
-        jumper: &'a Autojumper,
+        jumper: &'a dyn Autojumper,
         preinit: Option<&str>,
-        cgroup: bool,
     ) -> Self {
         let ps1 = &format!("=={}=={}==>", shell.name(), jumper.to_str());
         shell.setup(&root, jumper, ps1, preinit.unwrap_or(""));
 
+        let use_cgroup = std::env::var("PAZI_TEST_CGROUP") == Ok("true".to_string());
         let cmd = shell.command(&root);
-        let testshell = if cgroup {
+        let testshell = if use_cgroup {
             TestShell::new_in_cgroup(cmd, ps1, PAZI_CG)
         } else {
             TestShell::new(cmd, ps1)
@@ -95,6 +87,7 @@ impl<'a> Harness<'a> {
 
     pub fn visit_dir(&mut self, path: &str) {
         self.testshell.run(&format!("cd '{}'", path));
+        self.wait_children();
     }
 
     pub fn jump(&mut self, search: &str) -> String {
@@ -107,7 +100,11 @@ impl<'a> Harness<'a> {
             }
         };
 
-        self.testshell.run(&cmd)
+        let res = self.testshell.run(&cmd).to_string();
+        // We have to wait here too because jumping to a directory also results in an invocation of
+        // pazi visit
+        self.wait_children();
+        res
     }
 
     pub fn run_cmd(&mut self, cmd: &str) -> String {

@@ -1,24 +1,46 @@
+# We use 'sudo' below, so cargo might not be in our path anymore
 CARGO_BIN:=$(shell which cargo)
+
+.PHONY: help
+help:
+	@echo "pazi integration tests and benchmarks"
+	@echo ""
+	@echo "Usage:" 
+	@echo "    make [target]"
+	@echo ""
+	@echo "Targets:"
+	@echo "    integ:"
+	@echo "        Runs all integ tests"
+	@echo ""
+	@echo "    integ-nightly:"
+	@echo "        Runs all integ tests, and runs benchmarks once each as integ"
+	@echo "        tests (requires rust nightly)"
+	@echo ""
+	@echo "    integ-nightly-cgroups:"
+	@echo "        As above, but requires unified cgroups and sudo. This is known"
+	@echo "        to be less flaky for non-pazi autojumpers"
+	@echo ""
+	@echo "    bench:"
+	@echo "        Runs all benchmarks. Requires rust nightly and linux with "
+	@echo "        unified cgroups mounted and available. Uses sudo"
+
 
 .PHONY: integ
 integ: pazi
 	$(CARGO_BIN) test -- --test-threads=1
 
+.PHONY: integ-nightly
 integ-nightly: pazi jump
 	$(CARGO_BIN) test --features=nightly -- --test-threads=1
 
-.PHONY: integ-all
-integ-all: pazi jump
-	test_bin=$$($(CARGO_BIN) test --no-run --features=nightly,cgroups2 --message-format=json | jq -r "select(.profile.test == true) | .filenames[]") ;\
-		sudo CARGO_MANIFEST_DIR=$$PWD $$test_bin --test-threads=1
+.PHONY: integ-nightly-cgroups
+integ-nightly-cgroups: pazi jump
+	sudo -E PAZI_TEST_CGROUP=true $(CARGO_BIN) test --features=nightly -- --test-threads=1
 
+# Use PAZI_TEST_CGROUP because it's quicker and more accurate
 .PHONY: bench
 bench: pazi jump
-	$(CARGO_BIN) bench --features=nightly
-
-.PHONY: bench-all
-bench-all: pazi jump
-	sudo -E $(CARGO_BIN) bench --features=nightly,cgroups2
+	sudo -E PAZI_TEST_CGROUP=true $(CARGO_BIN) bench --features=nightly
 
 .PHONY: jump
 jump:
