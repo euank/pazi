@@ -9,19 +9,33 @@ help:
 	@echo "    make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "    integ: Runs all integ tests"
-	@echo "    integ-nightly: Runs all integ tests, and runs benchmarks once each as integ tests (requires rust nightly)"
-	@echo "    bench: runs all benchmarks. Requires rust nightly and linux with unified cgroups mounted and available. Uses sudo"
+	@echo "    integ:"
+	@echo "        Runs all integ tests"
+	@echo ""
+	@echo "    integ-nightly:"
+	@echo "        Runs all integ tests, and runs benchmarks once each as integ"
+	@echo "        tests (requires rust nightly)"
+	@echo ""
+	@echo "    integ-nightly-cgroups:"
+	@echo "        As above, but requires unified cgroups and sudo. This is known"
+	@echo "        to be less flaky for non-pazi autojumpers"
+	@echo ""
+	@echo "    bench:"
+	@echo "        Runs all benchmarks. Requires rust nightly and linux with "
+	@echo "        unified cgroups mounted and available. Uses sudo"
 
 
 .PHONY: integ
 integ: pazi
 	$(CARGO_BIN) test -- --test-threads=1
 
-# Don't use PAZI_TEST_CGROUP to avoid requiring root and so it runs on macos
 .PHONY: integ-nightly
 integ-nightly: pazi jump
 	$(CARGO_BIN) test --features=nightly -- --test-threads=1
+
+.PHONY: integ-nightly-cgroups
+integ-nightly-cgroups: pazi jump
+	sudo -E PAZI_TEST_CGROUP=true $(CARGO_BIN) test --features=nightly -- --test-threads=1
 
 # Use PAZI_TEST_CGROUP because it's quicker and more accurate
 .PHONY: bench

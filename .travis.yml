@@ -37,7 +37,7 @@ script:
 - cargo build --verbose --examples
 - cargo build --release # for integ tests
 # integ on stable
-# integ-nightly on linux nightly
+# integ-nightly.cgroups on linux nightly
 - MAKE_TARGET="integ"
-- 'if [[ "${TRAVIS_RUST_VERSION}" == "nightly" ]]; then MAKE_TARGET=integ-nightly; fi'
+- 'if [[ "${TRAVIS_RUST_VERSION}" == "nightly" ]]; then MAKE_TARGET=integ-nightly-cgroups; fi'
 - cd tests && make $MAKE_TARGET
