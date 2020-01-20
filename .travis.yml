@@ -3,6 +3,8 @@ branches:
   only:
   - master
   - dev
+  - staging
+  - trying
 jobs:
   include:
   - os: linux
