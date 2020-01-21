@@ -94,7 +94,7 @@ impl vte::Perform for VTEData {
         }
     }
 
-    fn hook(&mut self, _: &[i64], _: &[u8], _: bool) {
+    fn hook(&mut self, _: &[i64], _: &[u8], _: bool, _: char) {
         // ignore
     }
 
