@@ -147,7 +147,8 @@ pub fn deserialize(s: &str) -> Result<HashMap<String, f64>, String> {
             ));
         }
 
-        let path = snailquote::unescape(parts[1])?;
+        let path = snailquote::unescape(parts[1])
+            .map_err(|e| format!("error unescaping edited path: {}: {}", parts[1], e))?;
         let w = parts[0]
             .parse::<f64>()
             .map_err(|e| format!("could not parse {} as float: {}", parts[1], e))?;
