@@ -1,13 +1,15 @@
-use crate::channel;
-use signal_hook;
 use std::convert::From;
 use std::fmt;
 use std::fs;
 use std::io::Error as IOErr;
 use std::io::{Stdin, Write};
 use std::thread;
+
+use anyhow::Result;
+use signal_hook;
 use termion::screen::AlternateScreen;
 use termion::{clear, cursor};
+use crate::channel;
 
 pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String, FilterError>
 where

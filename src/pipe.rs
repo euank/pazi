@@ -5,7 +5,9 @@ use std::io::Error as IOErr;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-pub fn pipe<I>(opts_iter: I, pipe: Vec<&str>) -> Result<String, PipeError>
+use anyhow::{Context, bail, Result};
+
+pub fn pipe<I>(opts_iter: I, pipe: Vec<&str>) -> Result<String>
 where
     I: Iterator<Item = (String, f64)>,
 {
@@ -13,11 +15,8 @@ where
     let opts = opts_iter.collect::<Vec<_>>();
 
     let program = match pipe.next() {
-        None => {
-            return Err(PipeError::String("invalid pipe program: empty".to_string()));
-        }
-        Some(&"") => {
-            return Err(PipeError::String("invalid pipe program: empty".to_string()));
+        None | Some(&"") => {
+            bail!("invalid pipe program: empty");
         }
         Some(s) => s,
     };
@@ -27,7 +26,7 @@ where
     cmd.stdin(Stdio::piped()).stdout(Stdio::piped());
 
     let mut process = match cmd.spawn() {
-        Err(e) => panic!("couldn't spawn pipe process {}: {}", program, e),
+        Err(e) => { bail!("couldn't spawn pipe process {}: {}", program, e); },
         Ok(process) => process,
     };
 
@@ -41,7 +40,7 @@ where
             Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
                 break;
             }
-            e => e?,
+            e => e.with_context(|| format!("error writing input line to pipe program"))?,
         }
     }
     std::mem::drop(stdin);
@@ -51,9 +50,7 @@ where
     process.stdout.unwrap().read_to_string(&mut s)?;
     let line = match s.split("\n").next() {
         None => {
-            return Err(PipeError::String(
-                "pipe program did not produce a line from its input".to_string(),
-            ));
+            bail!("pipe program did not produce any output lines".to_string());
         }
         Some(line) => line,
     };
@@ -66,9 +63,7 @@ where
             return Ok(opts[ndx].0.to_string());
         }
     }
-    return Err(PipeError::String(
-            "pipe program did not produce a line from its input".to_string(),
-    ));
+    bail!("pipe program did not produce a line from its input");
 }
 
 #[derive(Debug)]

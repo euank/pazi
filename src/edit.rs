@@ -1,5 +1,3 @@
-use crate::frecent_paths::PathFrecencyDiff;
-use snailquote;
 use std::char;
 use std::collections::HashMap;
 use std::env;
@@ -7,16 +5,21 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::process::Command;
 use std::str;
+
+use anyhow::{anyhow, Context, bail, Result};
+use snailquote;
 use tempfile::Builder;
 use which;
 
+use super::frecent_paths::PathFrecencyDiff;
+
 // edit opens up EDITOR with the given input matches for the user to edit. It returns a 'diff' of
 // what has changed.
-pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff, String> {
+pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff> {
     let mut editor = env::var("PAZI_EDITOR")
         .or_else(|_| env::var("EDITOR"))
         .or_else(|_| env::var("VISUAL"))
-        .map_err(|_| "please set PAZI_EDITOR or EDITOR")
+        .map_err(|_| anyhow!("please set PAZI_EDITOR or EDITOR"))
         .and_then(|ed| {
             // support 'EDITOR=bin args' by splitting out possible args
             // note, this unfortunately means editors with spaces in their paths won't work.
@@ -28,7 +31,7 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff, String> {
             let rest = parts.map(|s| s.to_owned()).collect();
             match edpart {
                 Some(s) => Ok((PathBuf::from(s), rest)),
-                None => Err("empty editor"),
+                None => Err(anyhow!("empty editor")),
             }
         })
         .or_else(|_| {
@@ -40,17 +43,17 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff, String> {
                     Err(_) => (),
                 }
             }
-            Err("could not find editor in path")
+            Err(anyhow!("could not find editor in path"))
         })?;
 
     let mut tmpf = Builder::new()
         .prefix("pazi_edit")
         .tempfile()
-        .map_err(|e| format!("error creating tempfile: {}", e))?;
+        .with_context(|| "error creating tempfile")?;
 
     let serialized_data = serialize(data);
     tmpf.write_all(serialized_data.as_bytes())
-        .map_err(|e| format!("could not write data to tempfile: {}", e))?;
+        .with_context(|| "could not write data to tempfile")?;
 
     debug!("created tmpfile at: {}", tmpf.path().to_str().unwrap());
     editor.1.push(tmpf.path().to_str().unwrap().to_string());
@@ -59,20 +62,20 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff, String> {
 
     let mut child = cmd
         .spawn()
-        .map_err(|e| format!("error spawning editor: {}", e))?;
+        .with_context(|| "error spawning editor")?;
 
     let exit = child
         .wait()
-        .map_err(|e| format!("error waiting for editor: {}", e))?;
+        .with_context(|| "error waiting for editor")?;
 
     if !exit.success() {
-        return Err(format!("editor exited non-zero: {}", exit.code().unwrap()))?;
+        bail!("editor exited non-zero: {}", exit.code().unwrap());
     }
     tmpf.seek(SeekFrom::Start(0))
-        .map_err(|e| format!("could not seek in tempfile: {}", e))?;
+        .with_context(|| "could not seek in tempfile")?;
     let mut new_contents = String::new();
     tmpf.read_to_string(&mut new_contents)
-        .map_err(|e| format!("error reading file: {}", e))?;
+        .with_context(|| "error reading tempfile")?;
 
     if new_contents.trim() == serialized_data.trim() {
         debug!("identical data read; shortcutting out");
@@ -129,7 +132,7 @@ pub fn serialize(matches: &Vec<(String, f64)>) -> String {
     )
 }
 
-pub fn deserialize(s: &str) -> Result<HashMap<String, f64>, String> {
+pub fn deserialize(s: &str) -> Result<HashMap<String, f64>> {
     let mut res = HashMap::new();
     for mut line in s.lines() {
         line = line.trim();
@@ -141,17 +144,17 @@ pub fn deserialize(s: &str) -> Result<HashMap<String, f64>, String> {
         let parts: Vec<&str> = line.splitn(2, char::is_whitespace).collect();
 
         if parts.len() != 2 {
-            return Err(format!(
+            bail!( 
                 "line '{}' did not have whitespace to split on",
                 line
-            ));
+            );
         }
 
         let path = snailquote::unescape(parts[1])
-            .map_err(|e| format!("error unescaping edited path: {}: {}", parts[1], e))?;
+            .map_err(|e| anyhow!("error unescaping edited path: {}: {}", parts[1], e))?;
         let w = parts[0]
             .parse::<f64>()
-            .map_err(|e| format!("could not parse {} as float: {}", parts[1], e))?;
+            .map_err(|e| anyhow!("could not parse {} as float: {}", parts[1], e))?;
 
         res.insert(path, w);
     }
