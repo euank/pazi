@@ -47,7 +47,7 @@ impl PathFrecency {
         // remember 1000 entries total
         let frecency = if metadata.len() > 0 {
             // existing file, unmarshal that sucker
-            let mut de = rmp_serde::Deserializer::from_read(frecency_file);
+            let mut de = rmp_serde::Deserializer::new(frecency_file);
             serde::Deserialize::deserialize(&mut de).unwrap()
         } else {
             Frecency::<String>::new(1000)
