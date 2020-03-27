@@ -6,11 +6,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
 
+use anyhow::{bail, Context, Result};
 use libc;
 use rmp_serde;
 use serde;
 use serde::Serialize;
-use anyhow::{Context, bail, Result};
 
 use super::frecency::{descending_frecency, Frecency};
 use super::matcher::*;
@@ -46,14 +46,19 @@ impl PathFrecency {
             .create(true)
             .open(path)
             .with_context(|| format!("could not open pazi frecency file: {:?}", path))?;
-        let metadata = frecency_file.metadata()
+        let metadata = frecency_file
+            .metadata()
             .with_context(|| format!("could not get pazi frecency file metadata: {:?}", path))?;
         // remember 1000 entries total
         let frecency = if metadata.len() > 0 {
             // existing file, unmarshal that sucker
             let mut de = rmp_serde::Deserializer::new(frecency_file);
-            serde::Deserialize::deserialize(&mut de)
-                .with_context(|| format!("could not deserialize pazi frecency file as valid msgpack data: {:?}", path))?
+            serde::Deserialize::deserialize(&mut de).with_context(|| {
+                format!(
+                    "could not deserialize pazi frecency file as valid msgpack data: {:?}",
+                    path
+                )
+            })?
         } else {
             Frecency::<String>::new(1000)
         };
@@ -127,21 +132,26 @@ impl PathFrecency {
             .with_context(|| "path did not have file component")?;
 
         let tmpfile_name = format!(".{}.{}", fname.to_string_lossy(), my_pid);
-        let tmpfile_dir = self
-            .path
-            .parent()
-            .with_context(|| format!("unable to get parent directory of {:?} to save frecency database", self.path))?;
+        let tmpfile_dir = self.path.parent().with_context(|| {
+            format!(
+                "unable to get parent directory of {:?} to save frecency database",
+                self.path
+            )
+        })?;
         let tmpfile_path = tmpfile_dir.join(tmpfile_name);
 
         let tmpfile =
-            fs::File::create(&tmpfile_path)
-            .with_context(|| "could not create tempfile")?;
+            fs::File::create(&tmpfile_path).with_context(|| "could not create tempfile")?;
 
         self.frecency
             .serialize(&mut rmp_serde::Serializer::new(tmpfile))
             .with_context(|| "could not serialize frecency to tempfile")?;
-        fs::rename(&tmpfile_path, &self.path)
-            .with_context(|| format!("could not atomically rename {:?} -> {:?} ", tmpfile_path, self.path))
+        fs::rename(&tmpfile_path, &self.path).with_context(|| {
+            format!(
+                "could not atomically rename {:?} -> {:?} ",
+                tmpfile_path, self.path
+            )
+        })
     }
 
     pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {

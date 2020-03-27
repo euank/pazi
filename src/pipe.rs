@@ -5,7 +5,7 @@ use std::io::Error as IOErr;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use anyhow::{Context, bail, Result};
+use anyhow::{bail, Context, Result};
 
 pub fn pipe<I>(opts_iter: I, pipe: Vec<&str>) -> Result<String>
 where
@@ -26,7 +26,9 @@ where
     cmd.stdin(Stdio::piped()).stdout(Stdio::piped());
 
     let mut process = match cmd.spawn() {
-        Err(e) => { bail!("couldn't spawn pipe process {}: {}", program, e); },
+        Err(e) => {
+            bail!("couldn't spawn pipe process {}: {}", program, e);
+        }
         Ok(process) => process,
     };
 

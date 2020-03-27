@@ -5,11 +5,11 @@ use std::io::Error as IOErr;
 use std::io::{Stdin, Write};
 use std::thread;
 
+use crate::channel;
 use anyhow::Result;
 use signal_hook;
 use termion::screen::AlternateScreen;
 use termion::{clear, cursor};
-use crate::channel;
 
 pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String, FilterError>
 where
@@ -17,9 +17,7 @@ where
 {
     // if stdin isn't a tty, we can't really do an interactive selection, just print stuff out.
     // stdout is already a tty because `_main` uses termion to give us a tty for stdout.
-    let stdin_tty = unsafe {
-        libc::isatty(libc::STDIN_FILENO)
-    };
+    let stdin_tty = unsafe { libc::isatty(libc::STDIN_FILENO) };
     if stdin_tty == 0 {
         return Err(FilterError::NoSelection);
     }

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::str;
 
-use anyhow::{anyhow, Context, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use snailquote;
 use tempfile::Builder;
 use which;
@@ -60,13 +60,9 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff> {
     let mut cmd = Command::new(editor.0);
     cmd.args(editor.1);
 
-    let mut child = cmd
-        .spawn()
-        .with_context(|| "error spawning editor")?;
+    let mut child = cmd.spawn().with_context(|| "error spawning editor")?;
 
-    let exit = child
-        .wait()
-        .with_context(|| "error waiting for editor")?;
+    let exit = child.wait().with_context(|| "error waiting for editor")?;
 
     if !exit.success() {
         bail!("editor exited non-zero: {}", exit.code().unwrap());
@@ -144,10 +140,7 @@ pub fn deserialize(s: &str) -> Result<HashMap<String, f64>> {
         let parts: Vec<&str> = line.splitn(2, char::is_whitespace).collect();
 
         if parts.len() != 2 {
-            bail!( 
-                "line '{}' did not have whitespace to split on",
-                line
-            );
+            bail!("line '{}' did not have whitespace to split on", line);
         }
 
         let path = snailquote::unescape(parts[1])

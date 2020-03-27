@@ -25,8 +25,8 @@ mod frecency;
 mod frecent_paths;
 mod importers;
 mod interactive;
-mod pipe;
 mod matcher;
+mod pipe;
 mod shells;
 
 use std::env;
