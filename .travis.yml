@@ -5,6 +5,7 @@ branches:
   - dev
   - staging
   - trying
+  - "pr/*"
 jobs:
   include:
   - os: linux
