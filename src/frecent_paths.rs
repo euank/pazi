@@ -1,16 +1,19 @@
 // frecent_paths is a specialization of frecency that understands the semantics of stored paths.
 // It does things like the messyness of checking for a directory's existence and such.
 
-use crate::frecency::{descending_frecency, Frecency};
-use crate::matcher::*;
-use libc;
-use rmp_serde;
-use serde;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
+
+use anyhow::{bail, Context, Result};
+use libc;
+use rmp_serde;
+use serde;
+use serde::Serialize;
+
+use super::frecency::{descending_frecency, Frecency};
+use super::matcher::*;
 
 #[derive(Clone)]
 pub struct PathFrecency {
@@ -36,28 +39,35 @@ impl PathFrecencyDiff {
 
 impl PathFrecency {
     // load loads or, if it doesn't exist, creates a path frecency db at a given location
-    pub fn load(path: &Path) -> Self {
+    pub fn load(path: &Path) -> Result<Self> {
         let frecency_file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .open(path)
-            .unwrap();
-        let metadata = frecency_file.metadata().unwrap();
+            .with_context(|| format!("could not open pazi frecency file: {:?}", path))?;
+        let metadata = frecency_file
+            .metadata()
+            .with_context(|| format!("could not get pazi frecency file metadata: {:?}", path))?;
         // remember 1000 entries total
         let frecency = if metadata.len() > 0 {
             // existing file, unmarshal that sucker
-            let mut de = rmp_serde::Deserializer::from_read(frecency_file);
-            serde::Deserialize::deserialize(&mut de).unwrap()
+            let mut de = rmp_serde::Deserializer::new(frecency_file);
+            serde::Deserialize::deserialize(&mut de).with_context(|| {
+                format!(
+                    "could not deserialize pazi frecency file as valid msgpack data: {:?}",
+                    path
+                )
+            })?
         } else {
             Frecency::<String>::new(1000)
         };
 
-        PathFrecency {
+        Ok(PathFrecency {
             frecency: frecency,
             path: path.to_path_buf(),
             dirty: false,
-        }
+        })
     }
 
     pub fn visit(&mut self, dir: String) {
@@ -86,12 +96,12 @@ impl PathFrecency {
             .unwrap_or(false)
     }
 
-    pub fn apply_diff(&mut self, diff: PathFrecencyDiff) -> Result<(), String> {
+    pub fn apply_diff(&mut self, diff: PathFrecencyDiff) -> Result<()> {
         for removal in diff.removals {
             match self.frecency.remove(&removal) {
                 Some(_) => {}
                 None => {
-                    return Err(format!("no such item to remove: {}", removal));
+                    bail!("no such item to remove: {}", removal);
                 }
             }
             self.dirty = true;
@@ -105,7 +115,7 @@ impl PathFrecency {
         Ok(())
     }
 
-    pub fn save_to_disk(&self) -> Result<(), String> {
+    pub fn save_to_disk(&self) -> Result<()> {
         if !self.dirty {
             // No need to save, nothing's changed
             return Ok(());
@@ -113,29 +123,35 @@ impl PathFrecency {
         // Transform frecency path into a temporary path for atomic move
         let my_pid = unsafe { libc::getpid() };
         if my_pid == 0 {
-            return Err("could not get pid".to_string());
+            bail!("could not get pid");
         }
 
         let fname = self
             .path
             .file_name()
-            .ok_or("path did not have file component".to_string())?;
+            .with_context(|| "path did not have file component")?;
 
         let tmpfile_name = format!(".{}.{}", fname.to_string_lossy(), my_pid);
-        let tmpfile_dir = self
-            .path
-            .parent()
-            .ok_or("unable to get parent".to_string())?;
+        let tmpfile_dir = self.path.parent().with_context(|| {
+            format!(
+                "unable to get parent directory of {:?} to save frecency database",
+                self.path
+            )
+        })?;
         let tmpfile_path = tmpfile_dir.join(tmpfile_name);
 
         let tmpfile =
-            fs::File::create(&tmpfile_path).map_err(|_| "could not create tempfile".to_string())?;
+            fs::File::create(&tmpfile_path).with_context(|| "could not create tempfile")?;
 
         self.frecency
             .serialize(&mut rmp_serde::Serializer::new(tmpfile))
-            .map_err(|_| "could not create tmpfile".to_string())?;
-        fs::rename(tmpfile_path, &self.path)
-            .map_err(|e| format!("could not atomically rename: {}", e).to_string())
+            .with_context(|| "could not serialize frecency to tempfile")?;
+        fs::rename(&tmpfile_path, &self.path).with_context(|| {
+            format!(
+                "could not atomically rename {:?} -> {:?} ",
+                tmpfile_path, self.path
+            )
+        })
     }
 
     pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {

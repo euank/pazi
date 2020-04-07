@@ -25,17 +25,19 @@ mod frecency;
 mod frecent_paths;
 mod importers;
 mod interactive;
-mod pipe;
 mod matcher;
+mod pipe;
 mod shells;
 
 use std::env;
 use std::path::PathBuf;
 
+use anyhow::Result;
+use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
+
 use crate::frecent_paths::{FrecentPathIter, PathFrecency};
 use crate::pazi_result::*;
 use crate::shells::SUPPORTED_SHELLS;
-use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
@@ -256,7 +258,13 @@ fn _main() -> PaziResult {
     // the remainder of this fn is backwards compatibility code, all of this should vanish before
     // 1.0
     let path = frecency_path().expect("could not get frecency db path");
-    let mut frecency = PathFrecency::load(&path);
+    let mut frecency = match PathFrecency::load(&path) {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
 
     let res;
     if let Some(dir) = flags.value_of("add-dir") {
@@ -294,7 +302,7 @@ fn _main() -> PaziResult {
                     return PaziResult::ErrorNoInput;
                 }
                 Err(e) => {
-                    println!("{}", e);
+                    println!("{:?}", e);
                     return PaziResult::Error;
                 }
             }
@@ -327,20 +335,26 @@ fn _main() -> PaziResult {
     }
     if let Err(e) = frecency.save_to_disk() {
         // leading newline in case it was after a 'print' above
-        println!("\npazi: error saving db changes: {}", e);
+        println!("\npazi: error saving db changes: {:?}", e);
         return PaziResult::Error;
     }
     res
 }
 
-fn load_frecency() -> PathFrecency {
+fn load_frecency() -> Result<PathFrecency> {
     let path = frecency_path().expect("could not get frecency db path");
 
     PathFrecency::load(&path)
 }
 
 fn handle_completion(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = load_frecency();
+    let mut frecency = match load_frecency() {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
 
     match cmd.subcommand() {
         ("zsh", Some(sub_cmd)) => {
@@ -371,7 +385,13 @@ pub fn handle_zsh_completion(matching_dirs: FrecentPathIter) {
 }
 
 fn handle_edit(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = load_frecency();
+    let mut frecency = match load_frecency() {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
 
     let mut fclone = frecency.clone();
     let matches = match cmd.value_of("filter") {
@@ -382,13 +402,13 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
     let diff = match edit::edit(&match_vec) {
         Ok(d) => d,
         Err(e) => {
-            println!("Error editing: {}", e);
+            println!("Error editing: {:?}", e);
             return PaziResult::Error;
         }
     };
     match frecency.apply_diff(diff) {
         Err(e) => {
-            println!("Error applying edit diff: {}", e);
+            println!("Error applying edit diff: {:?}", e);
             return PaziResult::Error;
         }
         Ok(()) => {}
@@ -398,7 +418,7 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
             return PaziResult::Success;
         }
         Err(e) => {
-            println!("pazi: error saving db: {}", e);
+            println!("pazi: error saving db: {:?}", e);
             return PaziResult::Error;
         }
     }
@@ -424,13 +444,19 @@ fn handle_init(cmd: &ArgMatches) -> PaziResult {
 }
 
 fn handle_import(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = load_frecency();
+    let mut frecency = match load_frecency() {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
 
     let stats = match cmd.value_of("autojumper") {
         Some("fasd") => match importers::Fasd::import(&mut frecency) {
             Ok(stats) => stats,
             Err(e) => {
-                println!("error importing: {}", e);
+                println!("error importing: {:?}", e);
                 return PaziResult::Error;
             }
         },
@@ -453,14 +479,20 @@ fn handle_import(cmd: &ArgMatches) -> PaziResult {
             PaziResult::Success
         }
         Err(e) => {
-            println!("pazi: error adding directory: {}", e);
+            println!("pazi: error adding directory: {:?}", e);
             PaziResult::Error
         }
     }
 }
 
 fn handle_jump(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = load_frecency();
+    let mut frecency = match load_frecency() {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
     let res;
 
     let mut matches = match cmd.value_of("dir_target") {
@@ -488,7 +520,7 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
                 return PaziResult::ErrorNoInput;
             }
             Err(e) => {
-                println!("{}", e);
+                println!("{:?}", e);
                 return PaziResult::Error;
             }
         }
@@ -514,7 +546,7 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
 
     if let Err(e) = frecency.save_to_disk() {
         // leading newline in case it was after a 'print' above
-        println!("\npazi: error saving db changes: {}", e);
+        println!("\npazi: error saving db changes: {:?}", e);
         return PaziResult::Error;
     }
     res
@@ -529,7 +561,13 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
         }
     };
 
-    let mut frecency = load_frecency();
+    let mut frecency = match load_frecency() {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
     frecency.visit(dir.to_string());
 
     match frecency.save_to_disk() {
@@ -537,14 +575,20 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
             return PaziResult::Success;
         }
         Err(e) => {
-            println!("pazi: error adding directory: {}", e);
+            println!("pazi: error adding directory: {:?}", e);
             return PaziResult::Error;
         }
     }
 }
 
 fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = load_frecency();
+    let mut frecency = match load_frecency() {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            return PaziResult::Error;
+        }
+    };
 
     let matches = match cmd.value_of("dir_target") {
         Some(to) => frecency.directory_matches(to),

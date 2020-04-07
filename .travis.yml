@@ -5,6 +5,7 @@ branches:
   - dev
   - staging
   - trying
+  - "pr/*"
 jobs:
   include:
   - os: linux
@@ -14,7 +15,7 @@ jobs:
     dist: xenial
     rust: nightly
   - os: osx
-    osx_image: xcode9.2
+    osx_image: xcode9.4
     rust: stable
 
 addons:
