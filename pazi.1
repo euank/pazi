@@ -6,18 +6,47 @@
 .PP
 A fast autojump tool
 .PP
-USAGE: pazi [FLAGS] [OPTIONS] [SUBCOMMAND]
+USAGE:
+.IP
+.nf
+\f[C]
+pazi [FLAGS] [OPTIONS] [SUBCOMMAND]
+\f[R]
+.fi
 .PP
-FLAGS: -h, \[en]help Prints help information -i, \[en]interactive
-interactively search directory matches -V, \[en]version Prints version
-information
+FLAGS:
+.IP
+.nf
+\f[C]
+-h, --help           Prints help information
+
+-i, --interactive    interactively search directory matches
+
+-V, --version        Prints version information
+\f[R]
+.fi
 .PP
-OPTIONS: \[en]debug print debug information to stderr [env: PAZI_DEBUG=]
+OPTIONS:
+.IP
+.nf
+\f[C]
+    --debug <debug>    print debug information to stderr [env: PAZI_DEBUG=]
+\f[R]
+.fi
 .PP
-SUBCOMMANDS: edit Edit the frecency database help Prints this message or
-the help of the given subcommand(s) import Import from another autojump
-program init Prints initialization logic for the given shell to eval
-view View the frecency database
+SUBCOMMANDS: edit Edit the frecency database
+.IP
+.nf
+\f[C]
+help      Prints this message or the help of the given subcommand(s)
+
+import    Import from another autojump program
+
+init      Prints initialization logic for the given shell to eval
+
+view      View the frecency database
+\f[R]
+.fi
 .SH DESCRIPTION
 .PP
 Pazi is an autojump utility.
