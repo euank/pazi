@@ -30,14 +30,16 @@ OPTIONS:
 .IP
 .nf
 \f[C]
-    --debug <debug>    print debug information to stderr [env: PAZI_DEBUG=]
+--debug <debug>    print debug information to stderr [env: PAZI_DEBUG=]
 \f[R]
 .fi
 .PP
-SUBCOMMANDS: edit Edit the frecency database
+SUBCOMMANDS:
 .IP
 .nf
 \f[C]
+edit      Edit the frecency database
+
 help      Prints this message or the help of the given subcommand(s)
 
 import    Import from another autojump program
@@ -52,13 +54,6 @@ view      View the frecency database
 Pazi is an autojump utility.
 That is to say, pazi remembers visited directories in the past and makes
 it easier to get back to them.
-.PP
-There are several autojump utilities, including fasd (or a better
-maintained fork), z, and autojump.
-This implementation aims to be faster than any of the others (in no
-small part due to being in Rust), and also safer than \f[C]fasd\f[R] and
-\f[C]z\f[R] which, being shell-parsers written entirely in shell, are
-tricky to get right.
 .SH SETUP
 .PP
 After the pazi binary is in your \f[C]$PATH\f[R], add the following to
