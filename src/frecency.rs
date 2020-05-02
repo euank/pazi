@@ -58,7 +58,7 @@ where
         let since_epoch = now.duration_since(UNIX_EPOCH).unwrap();
         let now_secs = since_epoch.as_secs() as f64 + since_epoch.subsec_nanos() as f64 * 1e-9;
         let now_decay = now_secs * DECAY_RATE;
-        debug!("upserting {:?}", key);
+        debug!("upserting {:?} with weight {}", key, weight);
         match self.frecency.entry(key) {
             Entry::Occupied(mut e) => {
                 let frecency = e.get_mut();
