@@ -2,10 +2,11 @@ mod autojumpers;
 mod shells;
 mod testshell;
 
-use self::testshell::TestShell;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use self::testshell::TestShell;
 pub use self::autojumpers::autojump::Autojump;
 pub use self::autojumpers::fasd::Fasd;
 pub use self::autojumpers::jump::Jump;
@@ -110,7 +111,26 @@ impl<'a> Harness<'a> {
     // number to jump to 'selection' and input it.
     // It will return the number of the entry it picked.
     pub fn interactive_jump(&mut self, search: &str, selection: &str) -> i32 {
-        unimplemented!()
+        let cmd = match self.shell {
+            Shell::Bash | Shell::Zsh => {
+                format!("z -i {} || true", search) // ignore 'NoSelection' error
+            }
+            Shell::Fish => {
+                // no 'set -e', error away
+                format!("z -i {}", search)
+            }
+        };
+        let interactive_output = self.testshell.run_until(&cmd, "> ");
+        // parse interactive_output
+        let matching_line = interactive_output
+            .lines()
+            .find(|line| {
+                let parts: Vec<_> = line.split("\t").collect();
+                parts[2] == selection
+            }).unwrap();
+        let selection_num = matching_line.split("\t").collect::<Vec<_>>()[0];
+        self.testshell.run(selection_num);
+        selection_num.parse().unwrap()
     }
 
     // interactive_list returns the 'z -i {search} output'. Specifically, it returns an ordered
@@ -148,6 +168,16 @@ impl<'a> Harness<'a> {
             Shell::Fish => format!("{}; and echo $status", cmd),
         };
         self.testshell.run(&cmd)
+    }
+
+    pub fn directory_weights(&mut self) -> HashMap<String, f64> {
+        self.testshell.run("pazi view")
+            .lines()
+            .map(|line| {
+                let parts: Vec<_> = line.split_ascii_whitespace().collect();
+                (parts[1].parse().unwrap(), parts[0].parse().unwrap())
+            })
+            .collect()
     }
 
     // wait for any children of the shell to vanish; this is approximated by assuming that the
