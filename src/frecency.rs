@@ -227,8 +227,16 @@ mod test {
         // We picked a halflife of 30 days (matches mozilla)
         // That means two visits over 30 days ago should have decayed to less than one visit now
         let now = SystemTime::now();
-        f.visit_with_time_and_weight("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60), 1.0);
-        f.visit_with_time_and_weight("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60), 1.0);
+        f.visit_with_time_and_weight(
+            "foo",
+            now - time::Duration::from_secs(31 * 24 * 60 * 60),
+            1.0,
+        );
+        f.visit_with_time_and_weight(
+            "foo",
+            now - time::Duration::from_secs(31 * 24 * 60 * 60),
+            1.0,
+        );
         f.visit_with_time_and_weight("bar", now, 1.0);
         assert_eq!(keys(f.items()), vec!["bar", "foo"]);
     }

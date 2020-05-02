@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use self::testshell::TestShell;
 pub use self::autojumpers::autojump::Autojump;
 pub use self::autojumpers::fasd::Fasd;
 pub use self::autojumpers::jump::Jump;
@@ -15,6 +14,7 @@ pub use self::autojumpers::z::Z;
 pub use self::autojumpers::Autojumper;
 pub use self::autojumpers::None as NoJumper;
 pub use self::shells::Shell;
+use self::testshell::TestShell;
 
 pub struct Harness<'a> {
     testshell: TestShell,
@@ -127,7 +127,8 @@ impl<'a> Harness<'a> {
             .find(|line| {
                 let parts: Vec<_> = line.split("\t").collect();
                 parts[2] == selection
-            }).unwrap();
+            })
+            .unwrap();
         let selection_num = matching_line.split("\t").collect::<Vec<_>>()[0];
         self.testshell.run(selection_num);
         selection_num.parse().unwrap()
@@ -171,7 +172,8 @@ impl<'a> Harness<'a> {
     }
 
     pub fn directory_weights(&mut self) -> HashMap<String, f64> {
-        self.testshell.run("pazi view")
+        self.testshell
+            .run("pazi view")
             .lines()
             .map(|line| {
                 let parts: Vec<_> = line.split_ascii_whitespace().collect();
