@@ -4,7 +4,7 @@ Pazi provides the `--pipe` option to allow filtering potential jump targets
 through a program prior to being jumped to.
 
 The main use-case for this feature is integration with fuzzy-finders like
-[`fzf`](fzf) and [`skim`](skim).
+[`fzf`](https://github.com/junegunn/fzf) and [`skim`](https://github.com/lotabout/skim).
 
 ## Usage
 
@@ -24,6 +24,3 @@ The program passed to `--pipe` should behave as follows:
 
 Examples of programs that may be used as pipe programs include `fzf`, `sk`,
 `head`, `sort -R`, and so on.
-
-[fzf][https://github.com/junegunn/fzf]
-[skim][https://github.com/lotabout/skim]
