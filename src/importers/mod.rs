@@ -1,5 +1,4 @@
 use crate::frecent_paths::PathFrecency;
-use directories;
 use std::env;
 use std::fs;
 use std::io::BufRead;
@@ -20,7 +19,7 @@ impl Fasd {
             Ok(dir) => PathBuf::from(dir),
             Err(_) => {
                 let user_dirs =
-                    directories::UserDirs::new().ok_or_else(|| "could not get home dir")?;
+                    directories::UserDirs::new().ok_or("could not get home dir")?;
                 let home = user_dirs.home_dir();
                 home.join(".fasd")
             }
@@ -36,7 +35,7 @@ impl Fasd {
 
         for line in BufReader::new(f).lines() {
             let line = line.map_err(|e| format!("error reading {:?}: {}", &fasd_data, e))?;
-            let data = match line.splitn(2, "|").next() {
+            let data = match line.splitn(2, '|').next() {
                 None => {
                     warn!("Incorrectly formatted fasd data line: {}", line);
                     continue;

@@ -7,9 +7,6 @@ use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
 
 use anyhow::{bail, Context, Result};
-use libc;
-use rmp_serde;
-use serde;
 use serde::Serialize;
 
 use super::frecency::{descending_frecency, Frecency};
@@ -31,8 +28,8 @@ pub struct PathFrecencyDiff {
 impl PathFrecencyDiff {
     pub fn new(additions: Vec<(String, f64)>, removals: Vec<String>) -> Self {
         Self {
-            additions: additions,
-            removals: removals,
+            additions,
+            removals,
         }
     }
 }
@@ -64,7 +61,7 @@ impl PathFrecency {
         };
 
         Ok(PathFrecency {
-            frecency: frecency,
+            frecency,
             path: path.to_path_buf(),
             dirty: false,
         })
@@ -154,7 +151,7 @@ impl PathFrecency {
         })
     }
 
-    pub fn items_with_frecency<'a>(&'a mut self) -> FrecentPathIter<'a> {
+    pub fn items_with_frecency(&mut self) -> FrecentPathIter {
         let items = self
             .frecency
             .items()
@@ -165,7 +162,7 @@ impl PathFrecency {
         FrecentPathIter::new(self, items)
     }
 
-    pub fn items_with_frecency_raw<'a>(&'a mut self) -> FrecentPathIter<'a> {
+    pub fn items_with_frecency_raw(&mut self) -> FrecentPathIter {
         let mut items = self
             .frecency
             .items()
@@ -281,12 +278,12 @@ impl PathFrecency {
         FrecentPathIter::new(self, deduped)
     }
 
-    pub fn trim(&mut self, path: &String) -> bool {
+    pub fn trim(&mut self, path: &str) -> bool {
         if Path::new(path).is_dir() {
             false
         } else {
             debug!("trimming nonexistent dir: {}", path);
-            self.frecency.remove(path);
+            self.frecency.remove(&path.to_string());
             self.dirty = true;
             true
         }
@@ -303,7 +300,7 @@ pub struct FrecentPathIter<'a> {
 impl<'a> FrecentPathIter<'a> {
     pub fn new(db: &'a mut PathFrecency, paths: Vec<(String, f64)>) -> FrecentPathIter<'a> {
         FrecentPathIter {
-            db: db,
+            db,
             paths: paths.into_iter(),
         }
     }

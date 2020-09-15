@@ -7,15 +7,13 @@ use std::process::Command;
 use std::str;
 
 use anyhow::{anyhow, bail, Context, Result};
-use snailquote;
 use tempfile::Builder;
-use which;
 
 use super::frecent_paths::PathFrecencyDiff;
 
 // edit opens up EDITOR with the given input matches for the user to edit. It returns a 'diff' of
 // what has changed.
-pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff> {
+pub fn edit(data: &[(String, f64)]) -> Result<PathFrecencyDiff> {
     let mut editor = env::var("PAZI_EDITOR")
         .or_else(|_| env::var("EDITOR"))
         .or_else(|_| env::var("VISUAL"))
@@ -35,12 +33,9 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff> {
             }
         })
         .or_else(|_| {
-            for bin in vec!["editor", "nano", "vim", "vi"] {
-                match which::which(bin) {
-                    Ok(ed) => {
+            for bin in &["editor", "nano", "vim", "vi"] {
+                if let Ok(ed) = which::which(bin) {
                         return Ok((ed, vec![]));
-                    }
-                    Err(_) => (),
                 }
             }
             Err(anyhow!("could not find editor in path"))
@@ -88,7 +83,7 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff> {
         debug!("edit: processing {:?}", item);
         match new_map.remove(&item.0) {
             Some(w) => {
-                if item.1 != w {
+                if (item.1 - w).abs() > f64::EPSILON {
                     debug!("edit: update {:?}", item.0);
                     // weight edited, aka remove + add
                     removals.push(item.0.clone());
@@ -112,7 +107,7 @@ pub fn edit(data: &Vec<(String, f64)>) -> Result<PathFrecencyDiff> {
     Ok(PathFrecencyDiff::new(additions, removals))
 }
 
-pub fn serialize(matches: &Vec<(String, f64)>) -> String {
+pub fn serialize(matches: &[(String, f64)]) -> String {
     format!(
         r#"# Edit your frecency fearlessly!
 #
@@ -133,7 +128,7 @@ pub fn deserialize(s: &str) -> Result<HashMap<String, f64>> {
     for mut line in s.lines() {
         line = line.trim();
 
-        if line.len() == 0 || line.starts_with('#') {
+        if line.is_empty() || line.starts_with('#') {
             continue;
         }
 

@@ -7,7 +7,6 @@ use std::thread;
 
 use crate::channel;
 use anyhow::Result;
-use signal_hook;
 use termion::screen::AlternateScreen;
 use termion::{clear, cursor};
 
@@ -46,7 +45,7 @@ where
     };
 
     for i in 0..opts.len() {
-        write!(alt, "{}\t{}\t{}\n", opts.len() - i, opts[i].1, opts[i].0)?;
+        writeln!(alt, "{}\t{}\t{}", opts.len() - i, opts[i].1, opts[i].0)?;
     }
     write!(alt, "> ")?;
     alt.flush()?;
@@ -58,10 +57,10 @@ where
     });
     select! {
         recv(signal) -> _ => {
-            return Err(FilterError::NoSelection);
+            Err(FilterError::NoSelection)
         },
         recv(ruser_input) -> res => {
-            return res.unwrap()
+            res.unwrap()
                 .map_err(|_| FilterError::String("unable to read input".to_string()))
                 .and_then(|val| {
                     if val.trim().is_empty() {
@@ -79,17 +78,15 @@ where
                 })
                 .and_then(|ndx| {
                     if ndx > opts.len() {
-                        Err(FilterError::String("index out of bounds".to_string()))
-                    } else if ndx > opts.len() {
                         // handle separately from 'opts.get' to avoid underflow panicing
                         Err(FilterError::String("index out of bounds".to_string()))
                     } else {
                         opts.get(opts.len() - ndx).map(|o| o.0.clone())
-                            .ok_or(FilterError::String("index out of bounds".to_string()))
+                            .ok_or_else(|| FilterError::String("index out of bounds".to_string()))
                     }
-                });
+                })
         },
-    };
+    }
 }
 
 fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
@@ -126,9 +123,9 @@ impl From<String> for FilterError {
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &FilterError::String(ref s) => s.fmt(f),
-            &FilterError::NoSelection => Ok(()),
-            &FilterError::WriteErr(ref ioe) => ioe.fmt(f),
+            FilterError::String(ref s) => s.fmt(f),
+            FilterError::NoSelection => Ok(()),
+            FilterError::WriteErr(ref ioe) => ioe.fmt(f),
         }
     }
 }

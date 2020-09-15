@@ -35,14 +35,14 @@ where
     let take_stdin = process.stdin.take();
     let mut stdin = take_stdin.unwrap();
     let mut input_lines = Vec::new();
-    for i in 0..opts.len() {
-        let line = format!("{}\t{}", opts[i].1, opts[i].0);
+    for opt in &opts {
+        let line = format!("{}\t{}", opt.1, opt.0);
         input_lines.push(line.clone());
-        match write!(stdin, "{}\n", line) {
+        match writeln!(stdin, "{}", line) {
             Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
                 break;
             }
-            e => e.with_context(|| format!("error writing input line to pipe program"))?,
+            e => e.with_context(|| "error writing input line to pipe program")?,
         }
     }
     std::mem::drop(stdin);
@@ -50,7 +50,7 @@ where
     process.wait()?;
     let mut s = String::new();
     process.stdout.unwrap().read_to_string(&mut s)?;
-    let line = match s.split("\n").next() {
+    let line = match s.split('\n').next() {
         None => {
             bail!("pipe program did not produce any output lines".to_string());
         }
@@ -89,8 +89,8 @@ impl From<String> for PipeError {
 impl fmt::Display for PipeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &PipeError::String(ref s) => s.fmt(f),
-            &PipeError::WriteErr(ref ioe) => ioe.fmt(f),
+            PipeError::String(ref s) => s.fmt(f),
+            PipeError::WriteErr(ref ioe) => ioe.fmt(f),
         }
     }
 }

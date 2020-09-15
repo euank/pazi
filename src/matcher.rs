@@ -58,21 +58,18 @@ impl<'a> Matcher for PathComponentMatcher<'a> {
                     continue;
                 }
             };
-            match self.0.matches(s, search) {
-                Some(v) => {
-                    let attv = v * weight;
-                    res = match res {
-                        None => Some(attv),
-                        Some(existing) => {
-                            if attv > existing {
-                                Some(attv)
-                            } else {
-                                Some(existing)
-                            }
+            if let Some(v) = self.0.matches(s, search) {
+                let attv = v * weight;
+                res = match res {
+                    None => Some(attv),
+                    Some(existing) => {
+                        if attv > existing {
+                            Some(attv)
+                        } else {
+                            Some(existing)
                         }
                     }
                 }
-                None => {}
             }
             weight -= weight_step;
         }
