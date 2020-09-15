@@ -43,10 +43,7 @@ const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
 fn main() {
     let res = _main();
-    let extended_exit_codes = match std::env::var(PAZI_EXTENDED_EXIT_CODES_ENV!()) {
-        Ok(_) => true,
-        Err(_) => false,
-    };
+    let extended_exit_codes = std::env::var(PAZI_EXTENDED_EXIT_CODES_ENV!()).is_ok();
     if extended_exit_codes {
         let exit_code = res.extended_exit_code();
         debug!("using extended exit codes; exit {}", exit_code);
@@ -133,9 +130,9 @@ fn _main() -> PaziResult {
             SubCommand::with_name(SUBCOMMAND!(Import))
                 .about("Import from another autojump program")
                 .usage("pazi import fasd")
-                .arg(Arg::with_name("autojumper").help(&format!(
+                .arg(Arg::with_name("autojumper").help(
                     "the other autojump program to import from, only fasd is currently supported",
-                ))),
+                )),
         )
         .subcommand(
             SubCommand::with_name(SUBCOMMAND!(Jump))
@@ -398,7 +395,7 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
         Some(filter) => fclone.directory_matches_raw(filter),
         None => fclone.items_with_frecency_raw(),
     };
-    let match_vec = matches.collect();
+    let match_vec: Vec<_> = matches.collect();
     let diff = match edit::edit(&match_vec) {
         Ok(d) => d,
         Err(e) => {
@@ -415,11 +412,11 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
     };
     match frecency.save_to_disk() {
         Ok(_) => {
-            return PaziResult::Success;
+            PaziResult::Success
         }
         Err(e) => {
             println!("pazi: error saving db: {:?}", e);
-            return PaziResult::Error;
+            PaziResult::Error
         }
     }
 }
@@ -429,16 +426,16 @@ fn handle_init(cmd: &ArgMatches) -> PaziResult {
         Some(s) => match shells::from_name(s) {
             Some(s) => {
                 println!("{}", s.pazi_init());
-                return PaziResult::Success;
+                PaziResult::Success
             }
             None => {
                 println!("{}\n\nUnsupported shell: {}", cmd.usage(), s);
-                return PaziResult::Error;
+                PaziResult::Error
             }
         },
         None => {
             println!("{}\n\ninit requires an argument", cmd.usage());
-            return PaziResult::Error;
+            PaziResult::Error
         }
     }
 }
@@ -572,11 +569,11 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
 
     match frecency.save_to_disk() {
         Ok(_) => {
-            return PaziResult::Success;
+            PaziResult::Success
         }
         Err(e) => {
             println!("pazi: error adding directory: {:?}", e);
-            return PaziResult::Error;
+            PaziResult::Error
         }
     }
 }
@@ -614,7 +611,7 @@ fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
 
 fn frecency_path() -> Result<PathBuf, String> {
     let project_dir = directories::ProjectDirs::from("", "", "pazi")
-        .ok_or("unable to determine config path".to_owned())?;
+        .ok_or_else(|| "unable to determine config path".to_string())?;
     let config_dir = project_dir.config_dir();
 
     std::fs::create_dir_all(&config_dir)

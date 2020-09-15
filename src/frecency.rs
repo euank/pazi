@@ -36,7 +36,7 @@ where
     pub fn new(max_size: usize) -> Self {
         Frecency {
             frecency: HashMap::new(),
-            max_size: max_size,
+            max_size,
         }
     }
 
@@ -130,9 +130,9 @@ where
         let mut items: Vec<_> = self
             .items
             .into_iter()
-            .map(|(k, v)| (k, v.clone()))
+            .map(|(k, v)| (k, *v))
             .collect();
-        if items.len() == 0 {
+        if items.is_empty() {
             return Vec::new();
         }
         items.sort_by(descending_frecency);
@@ -154,7 +154,7 @@ where
     pub fn raw(self) -> Vec<(&'a T, f64)> {
         self.items
             .into_iter()
-            .map(|(k, v)| (k, v.clone()))
+            .map(|(k, v)| (k, *v))
             .collect()
     }
 }
@@ -163,7 +163,7 @@ pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
     // NaN shouldn't happen
     rhs.1
         .partial_cmp(&lhs.1)
-        .expect(&format!("{} could not be compared to {}", lhs.1, rhs.1))
+        .unwrap_or_else(|| panic!(format!("{} could not be compared to {}", lhs.1, rhs.1)))
 }
 
 #[cfg(test)]
