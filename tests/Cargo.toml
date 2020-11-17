@@ -8,7 +8,7 @@ edition = "2018"
 [dependencies]
 tempdir = "~0.3"
 pty = "~0.2"
-vte = "~0.5"
+vte = "~0.9"
 pazi = { path = ".." }
 libc = "~0.2"
 rand = "0.7"
