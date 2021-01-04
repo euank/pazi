@@ -780,9 +780,9 @@ checksum = "05c78687fb1a80548ae3250346c3db86a80a7cdd77bda190189f2d0a0987c81a"
 
 [[package]]
 name = "vte"
-version = "0.5.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a558b9c59823439c4b42b4d900b43450e2cd548a98ccf9c2170dfc824c1313de"
+checksum = "2df25fed2855d2fbcbdf1016c69a6ac070fa1aabc8b5d7aedaab8703dce0d2d6"
 dependencies = [
  "arrayvec",
  "utf8parse",
