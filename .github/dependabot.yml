@@ -1,0 +1,67 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: libc
+    versions:
+    - 0.2.82
+    - 0.2.84
+    - 0.2.85
+    - 0.2.86
+    - 0.2.88
+    - 0.2.90
+    - 0.2.91
+    - 0.2.92
+  - dependency-name: anyhow
+    versions:
+    - 1.0.38
+    - 1.0.39
+  - dependency-name: signal-hook
+    versions:
+    - 0.3.4
+    - 0.3.6
+    - 0.3.7
+  - dependency-name: env_logger
+    versions:
+    - 0.8.2
+  - dependency-name: rmp-serde
+    versions:
+    - 0.15.3
+  - dependency-name: log
+    versions:
+    - 0.4.13
+  - dependency-name: crossbeam-channel
+    versions:
+    - 0.5.0
+  - dependency-name: which
+    versions:
+    - 4.0.2
+  - dependency-name: directories
+    versions:
+    - 3.0.1
+- package-ecosystem: cargo
+  directory: "/tests"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: libc
+    versions:
+    - 0.2.84
+    - 0.2.85
+    - 0.2.86
+    - 0.2.87
+    - 0.2.88
+    - 0.2.89
+    - 0.2.90
+    - 0.2.91
+    - 0.2.93
+  - dependency-name: vte
+    versions:
+    - 0.10.0
