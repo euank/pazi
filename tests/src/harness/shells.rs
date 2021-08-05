@@ -104,7 +104,10 @@ set PATH (dirname {bin_path}) $PATH
         let home = root.join("home/pazi").to_string_lossy().to_string();
         ShellCmd {
             cmd: self.name(),
-            env: vec![("HOME", home)],
+            env: vec![
+                ("HOME", home.clone()),
+                ("XDG_CONFIG_HOME", format!("{}/.config", home)),
+            ],
         }
     }
 }
