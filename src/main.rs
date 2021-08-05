@@ -9,8 +9,6 @@ extern crate libc;
 extern crate log;
 extern crate rmp_serde;
 extern crate serde;
-#[macro_use]
-extern crate serde_derive;
 extern crate signal_hook;
 extern crate snailquote;
 extern crate tempfile;
