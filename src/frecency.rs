@@ -6,6 +6,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 const DECAY_RATE: f64 = f64::consts::LN_2 / (30. * 24. * 60. * 60.);

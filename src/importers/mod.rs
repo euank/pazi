@@ -1,9 +1,13 @@
 use crate::frecent_paths::PathFrecency;
+
 use std::env;
 use std::fs;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+
+use log::{warn, debug};
+
 pub struct Fasd;
 
 pub struct ImportStats {

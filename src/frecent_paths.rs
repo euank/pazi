@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
 
 use anyhow::{bail, Context, Result};
+use log::debug;
 use serde::Serialize;
 
 use super::frecency::{descending_frecency, Frecency};

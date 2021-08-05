@@ -5,10 +5,13 @@ use std::io::Error as IOErr;
 use std::io::{Stdin, Write};
 use std::thread;
 
-use crate::channel;
 use anyhow::Result;
+use crossbeam_channel::select;
+use log::debug;
 use termion::screen::AlternateScreen;
 use termion::{clear, cursor};
+
+use crate::channel;
 
 pub fn filter<I>(opts_iter: I, stdin: Stdin, stdout: fs::File) -> Result<String, FilterError>
 where

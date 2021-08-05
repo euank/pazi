@@ -6,6 +6,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
+use log::debug;
 
 pub fn pipe<I>(opts_iter: I, pipe: Vec<&str>) -> Result<String>
 where

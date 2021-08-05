@@ -7,6 +7,7 @@ use std::process::Command;
 use std::str;
 
 use anyhow::{anyhow, bail, Context, Result};
+use log::debug;
 use tempfile::Builder;
 
 use super::frecent_paths::PathFrecencyDiff;
