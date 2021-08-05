@@ -93,9 +93,9 @@ checksum = "e70cc2f62c6ce1868963827bd677764c62d07c3d9a3e1fb1177ee1a9ab199eb2"
 
 [[package]]
 name = "cfg-if"
-version = "0.1.10"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
+checksum = "b486ce3ccf7ffd79fdeb678eac06a9e6c09fc88d33836340becb8fffe87c5e33"
 
 [[package]]
 name = "cfg-if"
@@ -134,17 +134,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3c7c73a2d1e9fc0886a08b93e98eb643461230d5f1925e4036204d5f2e261a8"
 dependencies = [
  "autocfg",
- "cfg-if 0.1.10",
+ "cfg-if 0.1.9",
  "lazy_static",
 ]
 
 [[package]]
 name = "directories"
-version = "2.0.2"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "551a778172a450d7fc12e629ca3b0428d00f6afa9a43da1b630d54604e97371c"
+checksum = "ba927e81b69134a17de62e7be40364be6844f731238ed166f53aac36344ecc19"
 dependencies = [
- "cfg-if 0.1.10",
+ "cfg-if 0.1.9",
  "dirs-sys",
 ]
 
