@@ -1,23 +1,4 @@
 #[macro_use]
-extern crate clap;
-#[macro_use]
-extern crate crossbeam_channel as channel;
-extern crate directories;
-extern crate env_logger;
-extern crate libc;
-#[macro_use]
-extern crate log;
-extern crate rmp_serde;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate signal_hook;
-extern crate snailquote;
-extern crate tempfile;
-extern crate termion;
-extern crate which;
-
-#[macro_use]
 mod pazi_result;
 
 mod edit;
@@ -34,10 +15,12 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
+use crossbeam_channel as channel;
+use log::debug;
 
-use crate::frecent_paths::{FrecentPathIter, PathFrecency};
-use crate::pazi_result::*;
-use crate::shells::SUPPORTED_SHELLS;
+use frecent_paths::{FrecentPathIter, PathFrecency};
+use pazi_result::*;
+use shells::SUPPORTED_SHELLS;
 
 const PAZI_DB_NAME: &str = "pazi_dirs.msgpack";
 
@@ -83,8 +66,8 @@ macro_rules! SUBCOMMAND {
 fn _main() -> PaziResult {
     let flags = App::new("pazi")
         .about("A fast autojump tool")
-        .version(crate_version!())
-        .author(crate_authors!())
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!())
         .arg(
             Arg::with_name("debug")
                 .help("print debug information to stderr")
