@@ -40,7 +40,7 @@ status --is-interactive; and . ({} shell {} | psub)
     }
 
     fn supported_shells(&self) -> Vec<Shell> {
-        vec![Shell::Bash, Shell::Zsh, Shell::Fish]
+        vec![Shell::Bash, Shell::Zsh]
     }
 
     fn jump_alias(&self) -> &'static str {

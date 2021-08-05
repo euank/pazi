@@ -218,8 +218,8 @@ fn it_handles_help_output_shell(shell: &Shell) {
     let help1 = h.run_cmd_with_status("pazi --help");
     let help2 = h.run_cmd_with_status("z -h");
     let help3 = h.run_cmd_with_status("z --help");
-    assert!(help1.contains("USAGE:"), help1);
-    assert!(help2.contains("USAGE:"), help2);
+    assert!(help1.contains("USAGE:"), "{}", help1);
+    assert!(help2.contains("USAGE:"), "{}", help2);
     assert!(help1.ends_with("\n0"));
     assert!(help2.ends_with("\n0"));
 

@@ -24,7 +24,7 @@ impl Shell {
         }
     }
 
-    pub fn setup(&self, root: &Path, autojump: &Autojumper, ps1: &str, preinit: &str) {
+    pub fn setup(&self, root: &Path, autojump: &dyn Autojumper, ps1: &str, preinit: &str) {
         let rc_file = match *self {
             Shell::Bash | Shell::Zsh => root.join(format!("home/pazi/.{}rc", self.name())),
             Shell::Fish => root.join(format!("home/pazi/.config/fish/config.fish")),
@@ -104,7 +104,10 @@ set PATH (dirname {bin_path}) $PATH
         let home = root.join("home/pazi").to_string_lossy().to_string();
         ShellCmd {
             cmd: self.name(),
-            env: vec![("HOME", home)],
+            env: vec![
+                ("HOME", home.clone()),
+                ("XDG_CONFIG_HOME", format!("{}/.config", home)),
+            ],
         }
     }
 }

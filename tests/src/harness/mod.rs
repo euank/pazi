@@ -17,19 +17,19 @@ pub use self::shells::Shell;
 
 pub struct Harness<'a> {
     testshell: TestShell,
-    jumper: &'a Autojumper,
+    jumper: &'a dyn Autojumper,
     shell: &'a Shell,
 }
 
 pub struct HarnessBuilder<'a> {
     root: &'a Path,
     shell: &'a Shell,
-    jumper: &'a Autojumper,
+    jumper: &'a dyn Autojumper,
     preinit: Option<&'a str>,
 }
 
 impl<'a> HarnessBuilder<'a> {
-    pub fn new(root: &'a Path, jumper: &'a Autojumper, shell: &'a Shell) -> Self {
+    pub fn new(root: &'a Path, jumper: &'a dyn Autojumper, shell: &'a Shell) -> Self {
         HarnessBuilder {
             root: root,
             shell: shell,
