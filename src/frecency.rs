@@ -163,7 +163,7 @@ pub fn descending_frecency<T>(lhs: &(T, f64), rhs: &(T, f64)) -> Ordering {
     // NaN shouldn't happen
     rhs.1
         .partial_cmp(&lhs.1)
-        .unwrap_or_else(|| panic!(format!("{} could not be compared to {}", lhs.1, rhs.1)))
+        .unwrap_or_else(|| panic!("{} could not be compared to {}", lhs.1, rhs.1))
 }
 
 #[cfg(test)]
