@@ -495,9 +495,9 @@ dependencies = [
 
 [[package]]
 name = "snailquote"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f34b729d802f52194598858ac852c3fb3b33f6e026cd03195072ccb7bf3fc810"
+checksum = "ec62a949bda7f15800481a711909f946e1204f2460f89210eaf7f57730f88f86"
 dependencies = [
  "thiserror",
  "unicode_categories",
