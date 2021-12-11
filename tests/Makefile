@@ -5,7 +5,7 @@ CARGO_BIN:=$(shell which cargo)
 help:
 	@echo "pazi integration tests and benchmarks"
 	@echo ""
-	@echo "Usage:" 
+	@echo "Usage:"
 	@echo "    make [target]"
 	@echo ""
 	@echo "Targets:"
@@ -35,7 +35,7 @@ integ-nightly: pazi jump
 
 .PHONY: integ-nightly-cgroups
 integ-nightly-cgroups: pazi jump
-	sudo -E PAZI_TEST_CGROUP=true $(CARGO_BIN) test --features=nightly -- --test-threads=1
+	sudo -E PAZI_TEST_CGROUP=true $(CARGO_BIN) +nightly test --features=nightly -- --test-threads=1
 
 # Use PAZI_TEST_CGROUP because it's quicker and more accurate
 .PHONY: bench

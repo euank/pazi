@@ -1,0 +1,27 @@
+name: ci
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt, clippy
+      - name: submodules
+        run: git submodule update --init
+      - name: install package
+        run: sudo apt-get install -y bash fish python3 zsh
+      - name: build
+        run: cargo build --verbose --examples
+      - name: build release # for integ tests
+        run: cargo build --release
+      - name: integ
+        run: cd tests && make integ-nightly-cgroups
