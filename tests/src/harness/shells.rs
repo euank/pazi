@@ -107,6 +107,9 @@ set PATH (dirname {bin_path}) $PATH
             env: vec![
                 ("HOME", home.clone()),
                 ("XDG_CONFIG_HOME", format!("{}/.config", home)),
+                // for bash on nixos, skip the /etc/bashrc
+                // Per a comment above (the .hushlogin stuff), --rcfile doesn't help here :(
+                ("__ETC_BASHRC_SOURCED", "1".to_owned()),
             ],
         }
     }
