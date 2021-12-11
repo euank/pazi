@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: [master, staging, trying]
+  pull_request:
+    branches: [master]
+  workflow_dispatch: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: install rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt, clippy
+      - name: install nix
+        uses: cachix/install-nix-action@v16
+      - name: submodules
+        run: git submodule update --init
+      - name: build
+        run: cargo build --verbose --examples
+      - name: build release # for integ tests
+        run: cargo build --release
+      - name: integ
+        run: cd tests && nix run '.#runTests'
