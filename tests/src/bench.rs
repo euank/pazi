@@ -2,7 +2,7 @@ extern crate test;
 
 use test::Bencher;
 use crate::harness::{
-    Autojump, Autojumper, Fasd, Harness, HarnessBuilder, Jump, NoJumper, Pazi, Shell, Z,
+    Autojump, Autojumper, Fasd, Harness, HarnessBuilder, Jump, NoJumper, Pazi, Shell, Z, Zoxide,
 };
 use std::path::Path;
 use tempdir::TempDir;

@@ -1,6 +1,7 @@
 pub mod autojump;
 pub mod fasd;
 pub mod jump;
+pub mod zoxide;
 pub mod pazi;
 pub mod z;
 

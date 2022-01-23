@@ -4,7 +4,7 @@
 # 1. The name of the benchmark function to run
 # 2. A space-separated list of "Autojumper"s, 'j'
 # 3. A space-separated list of shells, 's'
-# 
+#
 # The generated benchmarks will test all combinations j * s for that function.
 #
 # Note: z is left out of benches with zsh because it frequently fails and prints:
@@ -12,9 +12,9 @@
 # It works fine in bash, and the cd bench works, but for some reason the jump
 # one in zsh constantly hits that. I think it has to do with how $RANDOM works
 # in zsh.
-cd_bench, NoJumper Pazi Fasd Jump, Zsh Bash
+cd_bench, NoJumper Pazi Fasd Jump Zoxide, Zsh Bash
 cd_bench, Autojump, Zsh Bash
 cd_bench, Z, Bash
-jump_bench jump_large_db_bench, Pazi Fasd Jump, Zsh Bash
+jump_bench jump_large_db_bench, Pazi Fasd Jump Zoxide, Zsh Bash
 jump_bench jump_large_db_bench, Autojump, Zsh Bash
 jump_bench jump_large_db_bench, Z, Bash
