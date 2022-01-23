@@ -20,6 +20,7 @@
     export JUMP_BIN=${pkgs.jump}/bin/jump
     export AUTOJUMP_BIN=${pkgs.autojump}/bin/autojump
     export AUTOJUMP_HOOKS=${pkgs.autojump}/share/autojump/
+    export FASD_BIN=${pkgs.fasd}/bin/fasd
 
     CARGO_BIN=$(which cargo)
     export PATH="${pkgs.zsh}/bin:${pkgs.coreutils}/bin:${pkgs.bashInteractive}/bin:${pkgs.fish}/bin:$PATH"
@@ -42,7 +43,7 @@
 
     runBenches = pkgs.writeShellScriptBin "pazi-integ-benches" ''
       ${runTestsShared}
-      sudo -E PAZI_TEST_CGROUP=true PATH="$PATH" $CARGO_BIN +nightly bench --features=nightly
+      sudo -E PAZI_TEST_CGROUP=true PATH="$PATH" $CARGO_BIN +nightly bench --features=nightly "$@"
     '';
 
   };

@@ -7,11 +7,11 @@ pub struct Fasd;
 
 impl Autojumper for Fasd {
     fn bin_path(&self) -> PathBuf {
-        let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
-        let fasd_path = Path::new(&crate_dir).join(format!("testbins/fasd/fasd"));
+        let bin = env::var("FASD_BIN").expect("run with the makefile");
+        let fasd_path = Path::new(&bin);
 
         if !fasd_path.exists() {
-            panic!("update submodules before running benches");
+            panic!("{:?} should exist", fasd_path);
         }
         fasd_path
             .canonicalize()
@@ -19,8 +19,8 @@ impl Autojumper for Fasd {
     }
 
     fn init_for(&self, shell: &Shell) -> String {
-        match shell {
-            &Shell::Bash => format!(
+        match *shell {
+            Shell::Bash => format!(
                 r#"
 # Ensure history is not blank; fasd grabs commands to process from history
 # (https://github.com/clvv/fasd/blob/90b531a5daaa545c74c7d98974b54cbdb92659fc/fasd#L127-L130)
@@ -31,11 +31,11 @@ eval "$({} --init posix-alias bash-hook)"
 "#,
                 self.bin_path().to_string_lossy()
             ),
-            &Shell::Zsh => format!(
+            Shell::Zsh => format!(
                 r#"eval "$({} --init posix-alias zsh-hook)""#,
                 self.bin_path().to_string_lossy()
             ),
-            &Shell::Fish => {
+            Shell::Fish => {
                 unimplemented!("fasd does not support fish");
             }
         }
