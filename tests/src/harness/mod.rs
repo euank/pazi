@@ -10,6 +10,7 @@ pub use self::autojumpers::autojump::Autojump;
 pub use self::autojumpers::fasd::Fasd;
 pub use self::autojumpers::jump::Jump;
 pub use self::autojumpers::pazi::Pazi;
+pub use self::autojumpers::zoxide::Zoxide;
 pub use self::autojumpers::z::Z;
 pub use self::autojumpers::Autojumper;
 pub use self::autojumpers::None as NoJumper;
