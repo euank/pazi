@@ -1,19 +1,17 @@
 use super::Autojumper;
 use crate::harness::Shell;
 use std::env;
-use std::path::Path;
+use std::path::{PathBuf, Path};
 
 // https://github.com/wting/autojump
 pub struct Autojump;
 
 impl Autojump {
     fn shell_path(&self, shell: &str) -> String {
-        let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
-        let shell_path =
-            Path::new(&crate_dir).join(format!("testbins/autojump/bin/autojump.{}", shell));
-
+        let shell_path = Path::new(&env::var("AUTOJUMP_HOOKS").expect("AUTOJUMP_HOOKS environment variable should be set"))
+            .join(format!("autojump.{}", shell));
         if !shell_path.exists() {
-            panic!("update submodules before running benches");
+            panic!("expected {:?} to exist", shell_path);
         }
         shell_path
             .canonicalize()
@@ -24,25 +22,20 @@ impl Autojump {
 }
 
 impl Autojumper for Autojump {
-    fn bin_path(&self) -> String {
-        let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
-        let bin_path = Path::new(&crate_dir).join(format!("testbins/autojump/bin/autojump"));
-
+    fn bin_path(&self) -> PathBuf {
+        let bin = env::var("AUTOJUMP_BIN").expect("AUTOJUMP_BIN environment variable should be set for the test harness");
+        let bin_path = Path::new(&bin);
         if !bin_path.exists() {
             panic!("update submodules before running benches");
         }
-        bin_path
-            .canonicalize()
-            .unwrap()
-            .to_string_lossy()
-            .to_string()
+        bin_path.into()
     }
 
     fn init_for(&self, shell: &Shell) -> String {
-        match shell {
-            &Shell::Bash => format!("source '{}'", self.shell_path("bash")),
-            &Shell::Zsh => format!("source '{}'", self.shell_path("zsh")),
-            &Shell::Fish => format!("source '{}'", self.shell_path("fish")),
+        match *shell {
+            Shell::Bash => format!("source '{}'", self.shell_path("bash")),
+            Shell::Zsh => format!("source '{}'", self.shell_path("zsh")),
+            Shell::Fish => format!("source '{}'", self.shell_path("fish")),
         }
     }
 

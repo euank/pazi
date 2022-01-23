@@ -38,7 +38,7 @@ export PS1="{ps1}" # sep so we know when our commands finished
 export PATH=$(dirname "{bin_path}"):$PATH
 {init}
 "#,
-                bin_path = autojump.bin_path(),
+                bin_path = autojump.bin_path().to_string_lossy(),
                 init = autojump.init_for(self),
                 ps1 = ps1,
                 preinit = preinit,
@@ -51,7 +51,7 @@ export PS1="{ps1}" # sep so we know when our commands finished
 export PATH=$(dirname "{bin_path}"):$PATH
 {init}
 "#,
-                bin_path = autojump.bin_path(),
+                bin_path = autojump.bin_path().to_string_lossy(),
                 init = autojump.init_for(self),
                 ps1 = ps1,
                 preinit = preinit,
@@ -66,7 +66,7 @@ end
 set PATH (dirname {bin_path}) $PATH
 {init}
 "#,
-                bin_path = autojump.bin_path(),
+                bin_path = autojump.bin_path().to_string_lossy(),
                 init = autojump.init_for(self),
                 ps1 = ps1,
                 preinit = preinit,

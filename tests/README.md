@@ -5,20 +5,15 @@ This directorty contains integration tests and benchmarks for pazi.
 Since it contains benchmarks, it uses the `release` target of pazi found in the
 parent directory when running.
 
-It contains autojumpers that are benchmarked against as git submodules in the `testbins` subdirectory.
+Autojumpers that are benchmarked against are all modeled with nix, as are the shell versions used for tests and benchmarks.
 
 ## Running benchmarks
 
-Running pazi's benchmarks is somewhat involved, mostly because it's being benchmarked against several other pieces of software with varying requirements.
+Running pazi's benchmarks is somewhat involved. In order to control the versions of software involved (namely other autojumpers and shells), we use [nix](https://nixos.org/download.html). The [flakes](https://nixos.wiki/wiki/Flakes) feature must be enabled as well.
 
-It depends on your system's version of the following:
+We also use the host rust (rather than a nix controlled one) since it's assumed you have rust handy anyway if you're working in pazi's codebase.
 
-* bash -- Used for all benchmarks, minimum required version unknown.
-* zsh -- Used for all benchmarks, minimum required version unknown.
-* go -- Used for `jump`, version >=1.11.
-* python -- Used for `autojump`, version 2.7 or 3.x.
-* cgroups -- Used for "sync" benchmarks for z and autojump, hybrid or unified cgroupsv2 must be mounted.
-* root -- Used for "sync" benchmarks.
-* rust -- Used for everything, nightly needed for benchmark support.
+Finally, we depend on using [`cgroupsv2`](https://www.kernel.org/doc/Documentation/cgroup-v2.txt) to properly track children (for autojumpers that fork child processes), so your kernel must have cgroupsv2 enabled.
+This additionally requires root access since we create cgroups to spawn benchmark shells in, which we do by executing sudo.
 
-Once you've got all that sorted out, running `make bench` or `make bench-all` should probably work.
+After getting the above sorted out, run `make bench`.

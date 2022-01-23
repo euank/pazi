@@ -4,10 +4,12 @@ pub mod jump;
 pub mod pazi;
 pub mod z;
 
+use std::path::PathBuf;
+
 use crate::harness::Shell;
 
 pub trait Autojumper {
-    fn bin_path(&self) -> String;
+    fn bin_path(&self) -> PathBuf;
     fn init_for(&self, shell: &Shell) -> String;
     fn jump_alias(&self) -> &'static str;
     fn supported_shells(&self) -> Vec<Shell>;
@@ -19,8 +21,8 @@ pub trait Autojumper {
 pub struct None;
 
 impl Autojumper for None {
-    fn bin_path(&self) -> String {
-        "".to_owned()
+    fn bin_path(&self) -> PathBuf {
+        "".into()
     }
     fn init_for(&self, _: &Shell) -> String {
         "".to_owned()
