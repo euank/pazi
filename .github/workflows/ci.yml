@@ -26,4 +26,4 @@ jobs:
       - name: build release # for integ tests
         run: cargo build --release
       - name: integ
-        run: cd tests && nix run '.#runTests'
+        run: cd tests && make integ-nightly
