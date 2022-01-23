@@ -7,8 +7,8 @@ pub struct Z;
 
 impl Autojumper for Z {
     fn bin_path(&self) -> PathBuf {
-        let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
-        let bin_path = Path::new(&crate_dir).join(format!("testbins/z/z.sh"));
+        let bin = env::var("RUPA_Z_BIN").expect("RUPA_Z_BIN should be set");
+        let bin_path = Path::new(&bin);
 
         if !bin_path.exists() {
             panic!("update submodules before running benches");

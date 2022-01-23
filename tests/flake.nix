@@ -5,7 +5,10 @@
   let
     pkgs = import nixpkgs {
       system = "x86_64-linux";
-      config = {};
+      overlays = [
+        (import ./nix/overlay.nix)
+      ];
+      config = { };
     };
   runTestsShared = ''
     die() {
@@ -21,6 +24,7 @@
     export AUTOJUMP_BIN=${pkgs.autojump}/bin/autojump
     export AUTOJUMP_HOOKS=${pkgs.autojump}/share/autojump/
     export FASD_BIN=${pkgs.fasd}/bin/fasd
+    export RUPA_Z_BIN=${pkgs.rupa_z}/share/z.sh
 
     CARGO_BIN=$(which cargo)
     export PATH="${pkgs.zsh}/bin:${pkgs.coreutils}/bin:${pkgs.bashInteractive}/bin:${pkgs.fish}/bin:$PATH"
