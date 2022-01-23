@@ -72,10 +72,14 @@ This implementation aims to be faster than any of the others (in no small part
 due to being in [Rust][rust]), and also safer than `fasd` and `z` which, being
 shell-parsers written entirely in shell, are [tricky to get right][fasd-pr].
 
+It's worth specifically noting that [zoxide](https://github.com/ajeetdsouza/zoxide) is another autojumper written in Rust, which has comparable performance <sup><sub>(better performance for some benchmarks currently!)</sub></sup>.
+
+For a more complete list of other autojump programs, refer to the [table here](docs/Autojumpers.md).
+
 ### So, is it faster?
 
 Pazi is faster than the other autojump implementations it has been benchmarked
-against. The results of these benchmarks are documented [here][benchmarks].
+against, excluding zoxide. The results of these benchmarks are documented [here][benchmarks].
 
 ## Status
 
