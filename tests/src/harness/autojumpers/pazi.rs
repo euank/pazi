@@ -1,12 +1,12 @@
 use super::Autojumper;
 use crate::harness::Shell;
 use std::env;
-use std::path::Path;
+use std::path::{PathBuf, Path};
 
 pub struct Pazi;
 
 impl Autojumper for Pazi {
-    fn bin_path(&self) -> String {
+    fn bin_path(&self) -> PathBuf {
         let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
         let pazi = Path::new(&crate_dir)
             .join("../target/release/pazi")
@@ -15,7 +15,7 @@ impl Autojumper for Pazi {
         if !pazi.exists() {
             panic!("compile pazi in release mode before running bench/integ tests");
         }
-        pazi.to_str().unwrap().to_string()
+        pazi
     }
 
     fn init_for(&self, shell: &Shell) -> String {

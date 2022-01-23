@@ -1,12 +1,12 @@
 use super::Autojumper;
 use crate::harness::Shell;
 use std::env;
-use std::path::Path;
+use std::path::{PathBuf, Path};
 
 pub struct Fasd;
 
 impl Autojumper for Fasd {
-    fn bin_path(&self) -> String {
+    fn bin_path(&self) -> PathBuf {
         let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("build with cargo");
         let fasd_path = Path::new(&crate_dir).join(format!("testbins/fasd/fasd"));
 
@@ -16,8 +16,6 @@ impl Autojumper for Fasd {
         fasd_path
             .canonicalize()
             .unwrap()
-            .to_string_lossy()
-            .to_string()
     }
 
     fn init_for(&self, shell: &Shell) -> String {
@@ -31,11 +29,11 @@ echo "echo hello world" >> ~/.bash_history
 
 eval "$({} --init posix-alias bash-hook)"
 "#,
-                self.bin_path()
+                self.bin_path().to_string_lossy()
             ),
             &Shell::Zsh => format!(
                 r#"eval "$({} --init posix-alias zsh-hook)""#,
-                self.bin_path()
+                self.bin_path().to_string_lossy()
             ),
             &Shell::Fish => {
                 unimplemented!("fasd does not support fish");

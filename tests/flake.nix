@@ -22,7 +22,11 @@
       set -eux
 
       [[ -e ../target/release/pazi ]] || die "No ../target/release/pazi file to run"
-      make jump
+
+      # Setup other binaries we test, communicated to the integ tests via env var
+      export JUMP_BIN=${pkgs.jump}/bin/jump
+      export AUTOJUMP_BIN=${pkgs.autojump}/bin/autojump
+      export AUTOJUMP_HOOKS=${pkgs.autojump}/share/autojump/
 
       CARGO_BIN=$(which cargo)
       export PATH="${pkgs.zsh}/bin:${pkgs.coreutils}/bin:${pkgs.bashInteractive}/bin:${pkgs.fish}/bin:$PATH"
