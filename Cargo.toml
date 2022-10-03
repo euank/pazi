@@ -22,7 +22,7 @@ directories = "~2"
 env_logger = "~0.9"
 libc = "~0.2"
 log = "~0.4"
-rmp-serde = "~0.15"
+rmp-serde = "~1.1"
 serde = { version = "~1", features = [ "derive" ] }
 signal-hook = "0.1.16"
 snailquote = "0.3.1"
