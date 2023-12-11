@@ -620,6 +620,8 @@ fn intercept_ctrl_c() -> Result<(), ()> {
         return libc::__errno_location();
         #[cfg(target_os = "macos")]
         return libc::__error();
+        #[cfg(target_os = "freebsd")]
+        return libc::__error();
     }
 
     unsafe {
