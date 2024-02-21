@@ -36,7 +36,7 @@ pub fn edit(data: &[(String, f64)]) -> Result<PathFrecencyDiff> {
         .or_else(|_| {
             for bin in &["editor", "nano", "vim", "vi"] {
                 if let Ok(ed) = which::which(bin) {
-                        return Ok((ed, vec![]));
+                    return Ok((ed, vec![]));
                 }
             }
             Err(anyhow!("could not find editor in path"))

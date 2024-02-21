@@ -3,7 +3,7 @@ name = "pazi-internal"
 description = "internal tests and benchmarks for pazi"
 version = "0.1.0"
 authors = ["Euan Kemp <euank@euank.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 tempdir = "~0.3"
