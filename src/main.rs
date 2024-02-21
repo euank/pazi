@@ -292,7 +292,7 @@ fn _main() -> PaziResult {
         } else {
             res = PaziResult::Error;
         }
-    } else if flags.value_of("dir_target") != None {
+    } else if flags.value_of("dir_target").is_some() {
         // Something got interpreted as 'dir_target' even though this wasn't in '--dir'
         println!("pazi: could not parse given flags.\n\n{}", flags.usage());
         return PaziResult::Error;
@@ -386,12 +386,9 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
             return PaziResult::Error;
         }
     };
-    match frecency.apply_diff(diff) {
-        Err(e) => {
-            println!("Error applying edit diff: {:?}", e);
-            return PaziResult::Error;
-        }
-        Ok(()) => {}
+    if let Err(e) = frecency.apply_diff(diff) {
+        println!("Error applying edit diff: {:?}", e);
+        return PaziResult::Error;
     };
     match frecency.save_to_disk() {
         Ok(_) => PaziResult::Success,
@@ -471,7 +468,6 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
             return PaziResult::Error;
         }
     };
-    let res;
 
     let mut matches = match cmd.value_of("dir_target") {
         Some(to) => {
@@ -485,7 +481,7 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
         None => frecency.items_with_frecency(),
     };
 
-    res = if cmd.is_present("interactive") {
+    let res = if cmd.is_present("interactive") {
         let stdout = termion::get_tty().unwrap();
         match interactive::filter(matches, std::io::stdin(), stdout) {
             Ok(el) => {
@@ -593,7 +589,7 @@ fn frecency_path() -> Result<PathBuf, String> {
         .ok_or_else(|| "unable to determine config path".to_string())?;
     let config_dir = project_dir.config_dir();
 
-    std::fs::create_dir_all(&config_dir)
+    std::fs::create_dir_all(config_dir)
         .map_err(|e| format!("could not create config dir: {}", e))?;
 
     let db_path = config_dir.join(PAZI_DB_NAME);

@@ -38,7 +38,7 @@ impl Fasd {
 
         for line in BufReader::new(f).lines() {
             let line = line.map_err(|e| format!("error reading {:?}: {}", &fasd_data, e))?;
-            let data = match line.splitn(2, '|').next() {
+            let data = match line.split('|').next() {
                 None => {
                     warn!("Incorrectly formatted fasd data line: {}", line);
                     continue;

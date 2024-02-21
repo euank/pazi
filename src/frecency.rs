@@ -100,10 +100,7 @@ where
                     }
                 };
             }
-            match min_entry {
-                None => None,
-                Some(e) => Some(e.0.clone()),
-            }
+            min_entry.map(|e| e.0.clone())
         };
 
         if let Some(min) = min_key {

@@ -102,13 +102,12 @@ impl<'a> CaseInsensitiveMatcher<'a> {
 
 impl<'a> Matcher for TransformedMatcher<'a> {
     fn matches(&self, input: &str, search: &str) -> Option<f64> {
-        match self.matcher.matches(
-            &(self.input_transformation)(input),
-            &(self.search_transformation)(search),
-        ) {
-            Some(f) => Some(f * self.attenuation),
-            None => None,
-        }
+        self.matcher
+            .matches(
+                &(self.input_transformation)(input),
+                &(self.search_transformation)(search),
+            )
+            .map(|f| f * self.attenuation)
     }
 }
 
