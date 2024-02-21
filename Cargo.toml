@@ -8,7 +8,7 @@ repository = "https://github.com/euank/pazi"
 readme = "README.md"
 keywords = ["autojump", "shell", "productivity-tool"]
 license = "GPL-3.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies.clap]
 version = "~2"
