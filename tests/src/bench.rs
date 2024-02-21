@@ -7,7 +7,7 @@ use crate::harness::{
 use std::path::Path;
 use tempdir::TempDir;
 
-fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
+fn cd_bench(b: &mut Bencher, jumper: &dyn Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, jumper, shell)
@@ -25,7 +25,7 @@ fn cd_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     });
 }
 
-fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
+fn jump_bench(b: &mut Bencher, jumper: &dyn Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.into_path();
     let mut h = HarnessBuilder::new(&root, jumper, shell)
@@ -47,7 +47,7 @@ fn jump_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
     });
 }
 
-fn jump_large_db_bench(b: &mut Bencher, jumper: &Autojumper, shell: &Shell) {
+fn jump_large_db_bench(b: &mut Bencher, jumper: &dyn Autojumper, shell: &Shell) {
     let tmpdir = TempDir::new("pazi_bench").unwrap();
     let root = tmpdir.path();
     let mut h = HarnessBuilder::new(&root, jumper, shell)
