@@ -130,11 +130,7 @@ where
     I: IntoIterator<Item = (&'a T, &'a f64)>,
 {
     pub fn normalized(self) -> Vec<(&'a T, f64)> {
-        let mut items: Vec<_> = self
-            .items
-            .into_iter()
-            .map(|(k, v)| (k, *v))
-            .collect();
+        let mut items: Vec<_> = self.items.into_iter().map(|(k, v)| (k, *v)).collect();
         if items.is_empty() {
             return Vec::new();
         }
@@ -155,10 +151,7 @@ where
     }
 
     pub fn raw(self) -> Vec<(&'a T, f64)> {
-        self.items
-            .into_iter()
-            .map(|(k, v)| (k, *v))
-            .collect()
+        self.items.into_iter().map(|(k, v)| (k, *v)).collect()
     }
 }
 

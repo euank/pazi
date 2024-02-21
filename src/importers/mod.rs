@@ -6,7 +6,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-use log::{warn, debug};
+use log::{debug, warn};
 
 pub struct Fasd;
 
@@ -22,8 +22,7 @@ impl Fasd {
             // For proper compatibility, this should use 'shellexpand' or a similar crate.
             Ok(dir) => PathBuf::from(dir),
             Err(_) => {
-                let user_dirs =
-                    directories::UserDirs::new().ok_or("could not get home dir")?;
+                let user_dirs = directories::UserDirs::new().ok_or("could not get home dir")?;
                 let home = user_dirs.home_dir();
                 home.join(".fasd")
             }

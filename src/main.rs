@@ -394,9 +394,7 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
         Ok(()) => {}
     };
     match frecency.save_to_disk() {
-        Ok(_) => {
-            PaziResult::Success
-        }
+        Ok(_) => PaziResult::Success,
         Err(e) => {
             println!("pazi: error saving db: {:?}", e);
             PaziResult::Error
@@ -551,9 +549,7 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
     frecency.visit(dir.to_string());
 
     match frecency.save_to_disk() {
-        Ok(_) => {
-            PaziResult::Success
-        }
+        Ok(_) => PaziResult::Success,
         Err(e) => {
             println!("pazi: error adding directory: {:?}", e);
             PaziResult::Error
