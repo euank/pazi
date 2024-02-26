@@ -33,6 +33,14 @@ First, you need to install the `pazi` binary somewhere in your `$PATH`.
 Prebuilt binaries are available on the
 [releases][releases] page.
 
+A homebrew script is also available in the homebrew/ folder
+
+```
+brew install ./homebrew/pazi.rb
+```
+
+
+
 If you have the rust toolchain installed, you may alternatively compile from
 this repository or run `cargo install pazi`.
 
