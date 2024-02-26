@@ -44,26 +44,33 @@ where
     }
 
     pub fn visit(&mut self, key: T) {
-        self.visit_with_time(key, SystemTime::now())
+        self.visit_with_time_and_weight(key, SystemTime::now(), 1.0)
+    }
+
+    /// Visit the given directory, and give it a 'frecency' weight bump of the provided multiplier.
+    /// A weight of '2.0' indicates that this should be treated the same as the directory being
+    /// visited twice at this specific time, for example.
+    pub fn visit_weight(&mut self, key: T, weight: f64) {
+        self.visit_with_time_and_weight(key, SystemTime::now(), weight)
     }
 
     // based off https://wiki.mozilla.org/User:Jesse/NewFrecency#Proposed_new_definition
-    fn visit_with_time(&mut self, key: T, now: SystemTime) {
+    fn visit_with_time_and_weight(&mut self, key: T, now: SystemTime, weight: f64) {
         // The only error here is if the system clock is before the unix epoch. I'm fine panicing
         // there.
         let since_epoch = now.duration_since(UNIX_EPOCH).unwrap();
         let now_secs = since_epoch.as_secs() as f64 + since_epoch.subsec_nanos() as f64 * 1e-9;
         let now_decay = now_secs * DECAY_RATE;
-        debug!("upserting {:?}", key);
+        debug!("upserting {:?} with weight {}", key, weight);
         match self.frecency.entry(key) {
             Entry::Occupied(mut e) => {
                 let frecency = e.get_mut();
-                *frecency = ((*frecency - now_decay).exp() + 1f64).ln() + now_decay;
+                *frecency = ((*frecency - now_decay).exp() + weight).ln() + now_decay;
                 debug!("Changed to {}", *frecency);
             }
             Entry::Vacant(e) => {
-                debug!("Adding with {}", now_decay);
-                e.insert(now_decay);
+                debug!("Adding with ({}, {})", weight, now_decay);
+                e.insert(weight.ln() + now_decay);
             }
         };
         while self.frecency.len() > self.max_size {
@@ -81,7 +88,7 @@ where
 
     fn insert_with_time(&mut self, key: T, now: SystemTime) {
         if !self.frecency.contains_key(&key) {
-            self.visit_with_time(key, now)
+            self.visit_with_time_and_weight(key, now, 1.0)
         }
     }
 
@@ -183,9 +190,9 @@ mod test {
     #[test]
     fn basic_frecency_test() {
         let mut f = Frecency::<&str>::new(100);
-        f.visit_with_time("foo", timef(10));
-        f.visit_with_time("bar", timef(20));
-        f.visit_with_time("foo", timef(50));
+        f.visit_with_time_and_weight("foo", timef(10), 1.0);
+        f.visit_with_time_and_weight("bar", timef(20), 1.0);
+        f.visit_with_time_and_weight("foo", timef(50), 1.0);
         f.insert_with_time("quux", timef(70));
         assert_eq!(keys(f.items()), vec!["foo", "quux", "bar"]);
         let f_clone = f.clone();
@@ -196,13 +203,13 @@ mod test {
     #[test]
     fn trims_min() {
         let mut f = Frecency::<&str>::new(2);
-        f.visit_with_time("foo", timef(10));
+        f.visit_with_time_and_weight("foo", timef(10), 1.0);
         assert_eq!(f.items().normalized().len(), 1);
-        f.visit_with_time("bar", timef(10));
-        f.visit_with_time("bar", timef(10));
-        f.visit_with_time("bar", timef(20));
+        f.visit_with_time_and_weight("bar", timef(10), 1.0);
+        f.visit_with_time_and_weight("bar", timef(10), 1.0);
+        f.visit_with_time_and_weight("bar", timef(20), 1.0);
         assert_eq!(keys(f.items()), vec!["bar", "foo"]);
-        f.visit_with_time("baz", timef(30));
+        f.visit_with_time_and_weight("baz", timef(30), 1.0);
         assert_eq!(keys(f.items()), vec!["bar", "baz"]);
     }
 
@@ -213,9 +220,37 @@ mod test {
         // We picked a halflife of 30 days (matches mozilla)
         // That means two visits over 30 days ago should have decayed to less than one visit now
         let now = SystemTime::now();
-        f.visit_with_time("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60));
-        f.visit_with_time("foo", now - time::Duration::from_secs(31 * 24 * 60 * 60));
-        f.visit_with_time("bar", now);
+        f.visit_with_time_and_weight(
+            "foo",
+            now - time::Duration::from_secs(31 * 24 * 60 * 60),
+            1.0,
+        );
+        f.visit_with_time_and_weight(
+            "foo",
+            now - time::Duration::from_secs(31 * 24 * 60 * 60),
+            1.0,
+        );
+        f.visit_with_time_and_weight("bar", now, 1.0);
         assert_eq!(keys(f.items()), vec!["bar", "foo"]);
+    }
+
+    #[test]
+    fn frecency_weight_works() {
+        let mut f = Frecency::<&str>::new(5);
+        // Visit with a weight of 5x should mean that older is 'better' than newer until we visit
+        // newer 5 more times
+        f.visit_with_time_and_weight("older", timef(10), 5.0);
+        f.visit_with_time_and_weight("newer", timef(11), 1.0);
+        assert_eq!(keys(f.items()), vec!["older", "newer"]);
+        for _ in 0..3 {
+            f.visit_with_time_and_weight("newer", timef(11), 1.0);
+        }
+        // still shouldn't beat 5 weight
+        assert_eq!(keys(f.items()), vec!["older", "newer"]);
+        for _ in 0..2 {
+            f.visit_with_time_and_weight("newer", timef(11), 1.0);
+        }
+        // 2 more times makes 1 + 3 + 2 = 6, should now trump the 5x weighting
+        assert_eq!(keys(f.items()), vec!["newer", "older"]);
     }
 }
