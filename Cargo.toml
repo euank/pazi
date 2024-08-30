@@ -17,7 +17,7 @@ default-features = false
 features = ["color", "vec_map"]
 
 [dependencies]
-crossbeam-channel = "0.4"
+crossbeam-channel = "0.5"
 directories = "~2"
 env_logger = "~0.11"
 libc = "~0.2"
