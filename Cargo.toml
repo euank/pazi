@@ -27,6 +27,6 @@ serde = { version = "~1", features = [ "derive" ] }
 signal-hook = "0.3"
 snailquote = "0.3.1"
 tempfile = "3"
-termion = "~1"
+termion = "~4"
 which = "6"
 anyhow = "~1"
