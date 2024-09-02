@@ -1,3 +1,13 @@
+## v0.5.0 - 2024-09-02
+
+This release contains a small number of bugfixes and improvements, but no major changes.
+
+### Changes
+
+* New database entries are added in a background process now, improving performance in some cases.
+* A manpage is now included in 'packaging/man/pazi.1'. Package maintainers are included to include this in pazi's package.
+* Various dependency updates.
+
 ## v0.4.1 - 2019-10-29
 
 This is a bugfix release fixing a notable issue in v0.4.0
