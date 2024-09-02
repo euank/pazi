@@ -8,7 +8,7 @@ use std::thread;
 use anyhow::Result;
 use crossbeam_channel::select;
 use log::debug;
-use termion::screen::AlternateScreen;
+use termion::screen::IntoAlternateScreen;
 use termion::{clear, cursor};
 
 use crate::channel;
@@ -34,8 +34,8 @@ where
     // We do this by waiting for signals or user-input, and just returning on whichever we see
     // first.
     // That makes 'sigint'/'sigterm' result in us exiting.
-    let mut alt = AlternateScreen::from(stdout);
-    let signal = notify(&[signal_hook::SIGINT, signal_hook::SIGTERM])
+    let mut alt = stdout.into_alternate_screen()?;
+    let signal = notify(&[signal_hook::consts::SIGINT, signal_hook::consts::SIGTERM])
         .map_err(|err| format!("error setting sigint hook: {}", err))?;
     let (suser_input, ruser_input) = channel::bounded(0);
     // Wait for a signal or for the user to select a choice.
@@ -94,7 +94,7 @@ where
 
 fn notify(signals: &[i32]) -> Result<channel::Receiver<i32>, IOErr> {
     let (s, r) = channel::bounded(100);
-    let signals = signal_hook::iterator::Signals::new(signals)?;
+    let mut signals = signal_hook::iterator::Signals::new(signals)?;
     thread::spawn(move || {
         for signal in signals.forever() {
             // ignore result, we're intentionally racing input and ctrl-c signals

@@ -17,16 +17,16 @@ default-features = false
 features = ["color", "vec_map"]
 
 [dependencies]
-crossbeam-channel = "0.4"
+crossbeam-channel = "0.5"
 directories = "~2"
 env_logger = "~0.11"
 libc = "~0.2"
 log = "~0.4"
-rmp-serde = "~0.15"
+rmp-serde = "~1"
 serde = { version = "~1", features = [ "derive" ] }
-signal-hook = "0.1.16"
+signal-hook = "0.3"
 snailquote = "0.3.1"
 tempfile = "3"
-termion = "~1"
-which = "4"
-anyhow = "1.0.27"
+termion = "~4"
+which = "6"
+anyhow = "~1"
