@@ -1,6 +1,8 @@
 {
   description = "A flake to run pazi's integ tests in a reproducible environment";
 
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
   outputs = { self, nixpkgs }:
     let
       pkgs = import nixpkgs {
