@@ -4,7 +4,7 @@ use std::io::Write;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::Command;
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -18,6 +18,7 @@ pub struct TestShell {
     fork: pty::fork::Fork,
     pty: pty::fork::Master,
     pid: libc::pid_t,
+    search_for: Arc<Mutex<Option<String>>>,
     output: mpsc::Receiver<String>,
     eof: mpsc::Receiver<()>,
     // cgroup, if set, is the cgroup this test shell is running in
@@ -150,6 +151,7 @@ impl TestShell {
         shellcmd.env("PS1", ps1);
         shellcmd.env("PATH", std::env::var("PATH").unwrap());
         shellcmd.env("TERM", "xterm");
+        shellcmd.current_dir(cmd.root);
         for env in cmd.env {
             shellcmd.env(env.0, env.1);
         }
@@ -180,6 +182,17 @@ impl TestShell {
 
         let (write_command_out, command_out) = mpsc::channel();
         let (write_eof_got, eof_got) = mpsc::channel();
+        // search_for is a shared mutex used to indicate that a non-ps1 value should be looked for
+        // during the next run.
+        // It takes effect once and entirely replaces ps1. It's pretty hacky, but it seems to be
+        // sufficient for testing 'z -i' output (what it was added for).
+        // Basically, it's the most minimal version of expect(1) you can get: wait for this output.
+        // In theory, it's a mutex that's used kinda sloppily so it seems racy, but in reality,
+        // we only can run commands on the pty serially and deliberately, so it's probably okay.
+        // This is mostly to make the compiler happy.
+        let search_for = Arc::new(Mutex::new(None));
+
+        let write_search_for = search_for.clone();
 
         // To move into the thread
         let ps12 = ps1.to_owned();
@@ -218,7 +231,20 @@ impl TestShell {
                         continue;
                     }
 
-                    if data.current_line == ps12
+                    let mut search_val = search_for.lock().unwrap();
+                    if let Some(search) = search_val.clone() {
+                        if data.current_line == search {
+                            // matched, search_for has 'match once' only semantics, so we're done
+                            // here :D
+                            *search_val = None;
+                            // duplicate below ps1 send code, reuse the 'command_out' for 'search'
+                            // stuff too.
+                            write_command_out
+                                .send(current_command_output.join("\n"))
+                                .unwrap();
+                            current_command_output.truncate(0);
+                        }
+                    } else if data.current_line == ps12
                         && last_prompt_scrollback_count < data.scrollback.len() as i32
                     {
                         // Exactly equal to PS1 means that there's a new blank PS1 prompt
@@ -230,7 +256,10 @@ impl TestShell {
                         // mark that we've seen this prompt, don't handle it again even if there's
                         // backspacing
                         last_prompt_scrollback_count = data.scrollback.len() as i32;
-                    } else if data.scrollback.len() > last_len.scrollback {
+                    }
+                    std::mem::drop(search_val);
+
+                    if data.scrollback.len() > last_len.scrollback {
                         // this only happens if the last character was a newline since we're
                         // checking this every statemachine advance.
                         let last_line = data.scrollback.last().unwrap();
@@ -265,6 +294,7 @@ impl TestShell {
             fork: fork,
             pid: child_pid,
             pty: pty,
+            search_for: write_search_for,
             eof: eof_got,
             output: command_out,
             cgroup: cgpath,
@@ -274,6 +304,18 @@ impl TestShell {
     pub fn run(&mut self, cmd: &str) -> String {
         self.pty.write(format!("{}\n", cmd).as_bytes()).unwrap();
         self.output.recv_timeout(Duration::from_secs(100)).unwrap()
+    }
+
+    pub fn run_until(&mut self, cmd: &str, until: &str) -> String {
+        {
+            *self.search_for.lock().unwrap() = Some(until.to_string());
+        }
+        self.run(cmd)
+    }
+
+    pub fn ctrl_c_to_prompt(&mut self) {
+        self.pty.write("\x03".as_bytes()).unwrap();
+        self.output.recv_timeout(Duration::from_secs(100)).unwrap();
     }
 
     pub fn wait_children(&mut self) {
@@ -290,13 +332,25 @@ impl TestShell {
         // benefit allows them to run without root on linux.
         // Benchmarks should use the cgroup method for performance reasons.
         loop {
-            let child_pids = Command::new("pgrep").args(vec!["-P", &format!("{}", self.pid)]).output().unwrap();
+            let child_pids = Command::new("pgrep")
+                .args(vec!["-P", &format!("{}", self.pid)])
+                .output()
+                .unwrap();
             // don't check status because 'pgrep -P $x' returns '1' if it matches no pids, which is
             // a success case for us
             if child_pids.stderr.len() > 0 {
-                panic!("unable to wait for children. Error running 'pgrep -P {}': {}", self.pid, String::from_utf8_lossy(&child_pids.stderr));
+                panic!(
+                    "unable to wait for children. Error running 'pgrep -P {}': {}",
+                    self.pid,
+                    String::from_utf8_lossy(&child_pids.stderr)
+                );
             }
-            let pids: Vec<i32> = String::from_utf8(child_pids.stdout).unwrap().lines().map(str::parse).collect::<Result<Vec<_>, _>>().unwrap();
+            let pids: Vec<i32> = String::from_utf8(child_pids.stdout)
+                .unwrap()
+                .lines()
+                .map(str::parse)
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap();
             if pids.len() == 0 {
                 return;
             };

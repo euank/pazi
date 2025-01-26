@@ -56,8 +56,7 @@ fn it_jumps_to_more_frecent_items() {
 fn it_jumps_to_more_frecent_items_shell(shell: &Shell) {
     let tmpdir = TempDir::new("pazi_integ").unwrap();
     let root = tmpdir.path().canonicalize().unwrap();
-    let mut h = HarnessBuilder::new(&root, &Pazi, shell)
-        .finish();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
     let a_dir_path = root.join("a/tmp");
     let b_dir_path = root.join("b/tmp");
     let a_dir = a_dir_path.to_string_lossy();
@@ -299,4 +298,91 @@ fn it_pipes_shell(shell: &Shell) {
     let last_dir = tail.split("\t").nth(1).take().unwrap();
     assert_eq!("0", h.run_cmd_with_status("z --pipe 'tail -n 1'"));
     assert_eq!(last_dir, h.run_cmd("pwd"));
+}
+
+#[test]
+fn interactive_list_lists() {
+    for shell in &Pazi.supported_shells() {
+        println!("shell: {}", shell.name());
+        interactive_list_lists_shell(shell);
+    }
+}
+
+fn interactive_list_lists_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path().canonicalize().unwrap();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
+
+    let root_dir = root.to_string_lossy();
+    let a_dir_path = root.join("a/tmp");
+    let b_dir_path = root.join("b/tmp");
+    let a_dir = a_dir_path.to_string_lossy();
+    let b_dir = b_dir_path.to_string_lossy();
+
+    h.create_dir(&a_dir);
+    h.create_dir(&b_dir);
+    h.visit_dir(&a_dir);
+    h.visit_dir(&b_dir);
+    h.visit_dir(&root_dir);
+
+    let items = h.interactive_list("");
+    assert_eq!(items.len(), 3);
+    let mut interactive_dirs: Vec<_> = items.iter().map(|item| item.1.clone()).collect();
+    interactive_dirs.sort();
+    let mut expected_dirs = vec![root_dir, a_dir, b_dir];
+    expected_dirs.sort();
+
+    assert_eq!(interactive_dirs, expected_dirs);
+}
+
+#[test]
+fn interactive_selection_boosts_weight() {
+    for shell in &Pazi.supported_shells() {
+        println!("shell: {}", shell.name());
+        interactive_selection_boosts_weight_shell(shell);
+    }
+}
+
+fn interactive_selection_boosts_weight_shell(shell: &Shell) {
+    let tmpdir = TempDir::new("pazi_integ").unwrap();
+    let root = tmpdir.path().canonicalize().unwrap();
+    let mut h = HarnessBuilder::new(&root, &Pazi, shell).finish();
+
+    // This test is that if we `z -i` and choose one directory, it gets more of a boost than just
+    // visiting the other one.
+    let root_dir = root.to_string_lossy();
+    let a_dir_path = root.join("a/tmp");
+    let b_dir_path = root.join("b/tmp");
+    let a_dir = a_dir_path.to_string_lossy();
+    let b_dir = b_dir_path.to_string_lossy();
+
+    h.create_dir(&a_dir);
+    h.create_dir(&b_dir);
+    h.visit_dir(&a_dir);
+    h.visit_dir(&b_dir);
+    h.visit_dir(&root_dir);
+    // Record weights; cd to the higher weight one, zap to the lower, verify the lower is then
+    // higher
+    let weights = h.directory_weights();
+    let a_weight = weights.get(&a_dir.to_string()).unwrap();
+    let b_weight = weights.get(&b_dir.to_string()).unwrap();
+
+    if a_weight > b_weight {
+        h.visit_dir(&a_dir);
+        h.interactive_jump("", &b_dir);
+    } else {
+        h.visit_dir(&b_dir);
+        h.interactive_jump("", &a_dir);
+    }
+    h.visit_dir(&root_dir);
+
+    let weights = h.directory_weights();
+    let new_a_weight = weights.get(&a_dir.to_string()).unwrap();
+    let new_b_weight = weights.get(&b_dir.to_string()).unwrap();
+
+    if a_weight > b_weight {
+        assert!(new_b_weight > new_a_weight);
+    } else {
+        assert!(new_a_weight > new_b_weight);
+    }
 }
