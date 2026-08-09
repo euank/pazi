@@ -109,7 +109,7 @@ where
         }
     }
 
-    pub fn items(&self) -> FrecencyView<T, &HashMap<T, f64>> {
+    pub fn items(&self) -> FrecencyView<'_, T, &HashMap<T, f64>> {
         FrecencyView {
             items: &self.frecency,
         }
