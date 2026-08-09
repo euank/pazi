@@ -1,7 +1,4 @@
-use std::convert::From;
-use std::fmt;
 use std::io::prelude::*;
-use std::io::Error as IOErr;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -67,31 +64,4 @@ where
         }
     }
     bail!("pipe program did not produce a line from its input");
-}
-
-#[derive(Debug)]
-pub enum PipeError {
-    WriteErr(IOErr),
-    String(String),
-}
-
-impl From<IOErr> for PipeError {
-    fn from(e: IOErr) -> Self {
-        PipeError::WriteErr(e)
-    }
-}
-
-impl From<String> for PipeError {
-    fn from(e: String) -> Self {
-        PipeError::String(e)
-    }
-}
-
-impl fmt::Display for PipeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            PipeError::String(ref s) => s.fmt(f),
-            PipeError::WriteErr(ref ioe) => ioe.fmt(f),
-        }
-    }
 }

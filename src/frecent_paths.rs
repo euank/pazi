@@ -152,7 +152,7 @@ impl PathFrecency {
         })
     }
 
-    pub fn items_with_frecency(&mut self) -> FrecentPathIter {
+    pub fn items_with_frecency(&mut self) -> FrecentPathIter<'_> {
         let items = self
             .frecency
             .items()
@@ -163,7 +163,7 @@ impl PathFrecency {
         FrecentPathIter::new(self, items)
     }
 
-    pub fn items_with_frecency_raw(&mut self) -> FrecentPathIter {
+    pub fn items_with_frecency_raw(&mut self) -> FrecentPathIter<'_> {
         let mut items = self
             .frecency
             .items()
