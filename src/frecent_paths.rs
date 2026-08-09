@@ -152,7 +152,29 @@ impl PathFrecency {
         })
     }
 
-    pub fn items_with_frecency(&mut self) -> FrecentPathIter<'_> {
+    pub fn prune(&mut self) -> usize {
+        let nonexistent = self
+            .frecency
+            .items()
+            .raw()
+            .into_iter()
+            .filter(|(path, _)| !Path::new(path.as_str()).is_dir())
+            .map(|(path, _)| path.to_owned())
+            .collect::<Vec<_>>();
+
+        for path in &nonexistent {
+            debug!("pruning nonexistent dir: {}", path);
+            self.frecency.remove(path);
+        }
+
+        if !nonexistent.is_empty() {
+            self.dirty = true;
+        }
+
+        nonexistent.len()
+    }
+
+    pub fn items_with_frecency(&self) -> FrecentPathIter {
         let items = self
             .frecency
             .items()
@@ -160,10 +182,10 @@ impl PathFrecency {
             .into_iter()
             .map(|(p, f)| (p.to_owned(), f))
             .collect::<Vec<_>>();
-        FrecentPathIter::new(self, items)
+        FrecentPathIter::new(items)
     }
 
-    pub fn items_with_frecency_raw(&mut self) -> FrecentPathIter<'_> {
+    pub fn items_with_frecency_raw(&self) -> FrecentPathIter {
         let mut items = self
             .frecency
             .items()
@@ -172,25 +194,25 @@ impl PathFrecency {
             .map(|(p, f)| (p.to_owned(), f))
             .collect::<Vec<_>>();
         items.sort_by(descending_frecency);
-        FrecentPathIter::new(self, items)
+        FrecentPathIter::new(items)
     }
 
-    pub fn directory_matches<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
+    pub fn directory_matches(&self, filter: &str) -> FrecentPathIter {
         self.directory_matches_impl(filter, true, |item, weight, match_weight| {
             (item, match_weight * 0.8 + weight * 0.2)
         })
     }
 
-    pub fn directory_matches_raw<'a>(&'a mut self, filter: &str) -> FrecentPathIter<'a> {
+    pub fn directory_matches_raw(&self, filter: &str) -> FrecentPathIter {
         self.directory_matches_impl(filter, false, |item, weight, _| (item, weight))
     }
 
-    fn directory_matches_impl<'a>(
-        &'a mut self,
+    fn directory_matches_impl(
+        &self,
         filter: &str,
         normalize: bool,
         weight: fn(item: &String, frecency: f64, match_weight: f64) -> (&String, f64),
-    ) -> FrecentPathIter<'a> {
+    ) -> FrecentPathIter {
         // 'best directory' is a tricky concept, as is 'match.
         //
         // There's a continuum from "exact string match" to "no characters in common", and we
@@ -276,46 +298,88 @@ impl PathFrecency {
                 })
         );
 
-        FrecentPathIter::new(self, deduped)
-    }
-
-    pub fn trim(&mut self, path: &str) -> bool {
-        if Path::new(path).is_dir() {
-            false
-        } else {
-            debug!("trimming nonexistent dir: {}", path);
-            self.frecency.remove(&path.to_string());
-            self.dirty = true;
-            true
-        }
+        FrecentPathIter::new(deduped)
     }
 }
 
 /// An owning iterator over frecent paths
-/// which removes nonexistent directories from the database.
-pub struct FrecentPathIter<'a> {
-    db: &'a mut PathFrecency,
+/// which skips nonexistent directories without modifying the database.
+pub struct FrecentPathIter {
     paths: IntoIter<(String, f64)>,
 }
 
-impl<'a> FrecentPathIter<'a> {
-    pub fn new(db: &'a mut PathFrecency, paths: Vec<(String, f64)>) -> FrecentPathIter<'a> {
+impl FrecentPathIter {
+    pub fn new(paths: Vec<(String, f64)>) -> FrecentPathIter {
         FrecentPathIter {
-            db,
             paths: paths.into_iter(),
         }
     }
 }
 
-impl<'a> Iterator for FrecentPathIter<'a> {
+impl Iterator for FrecentPathIter {
     type Item = (String, f64);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let el = self.paths.next()?;
-            if !self.db.trim(&el.0) {
+            if Path::new(&el.0).is_dir() {
                 return Some(el);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PathFrecency;
+
+    #[test]
+    fn iteration_skips_missing_paths_without_dirtying_database() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let db_path = tempdir.path().join("pazi.msgpack");
+        let existing = tempdir.path().join("existing");
+        std::fs::create_dir(&existing).unwrap();
+
+        let mut db = PathFrecency::load(&db_path).unwrap();
+        db.visit(existing.to_string_lossy().into_owned());
+        db.visit(
+            tempdir
+                .path()
+                .join("missing")
+                .to_string_lossy()
+                .into_owned(),
+        );
+        db.save_to_disk().unwrap();
+        db.dirty = false;
+
+        let paths = db.items_with_frecency().collect::<Vec<_>>();
+
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0].0, existing.to_string_lossy());
+        assert!(!db.dirty);
+        assert_eq!(db.frecency.items().raw().len(), 2);
+    }
+
+    #[test]
+    fn prune_removes_missing_paths_and_marks_database_dirty() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let db_path = tempdir.path().join("pazi.msgpack");
+        let existing = tempdir.path().join("existing");
+        std::fs::create_dir(&existing).unwrap();
+
+        let mut db = PathFrecency::load(&db_path).unwrap();
+        db.visit(existing.to_string_lossy().into_owned());
+        db.visit(
+            tempdir
+                .path()
+                .join("missing")
+                .to_string_lossy()
+                .into_owned(),
+        );
+        db.dirty = false;
+
+        assert_eq!(db.prune(), 1);
+        assert!(db.dirty);
+        assert_eq!(db.frecency.items().raw().len(), 1);
     }
 }
