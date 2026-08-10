@@ -248,6 +248,7 @@ fn _main() -> PaziResult {
 
     let res;
     if let Some(dir) = flags.value_of("add-dir") {
+        frecency.prune();
         frecency.visit(dir.to_string());
 
         match frecency.save_to_disk() {
@@ -328,7 +329,7 @@ fn load_frecency() -> Result<PathFrecency> {
 }
 
 fn handle_completion(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = match load_frecency() {
+    let frecency = match load_frecency() {
         Ok(f) => f,
         Err(e) => {
             println!("{:?}", e);
@@ -338,7 +339,7 @@ fn handle_completion(cmd: &ArgMatches) -> PaziResult {
 
     match cmd.subcommand() {
         ("zsh", Some(sub_cmd)) => {
-            handle_zsh_completion(find_matches(&mut frecency, sub_cmd.value_of("dir_target")))
+            handle_zsh_completion(find_matches(&frecency, sub_cmd.value_of("dir_target")))
         }
         ("bash", Some(_cmd)) => println!("bash not supported yet"),
         ("fish", Some(_cmd)) => println!("fish not supported yet"),
@@ -347,10 +348,7 @@ fn handle_completion(cmd: &ArgMatches) -> PaziResult {
     PaziResult::Success
 }
 
-pub fn find_matches<'a>(
-    frecency: &'a mut PathFrecency,
-    dir_target: Option<&str>,
-) -> FrecentPathIter<'a> {
+pub fn find_matches(frecency: &PathFrecency, dir_target: Option<&str>) -> FrecentPathIter {
     match dir_target {
         Some(to) => frecency.directory_matches(to),
         None => frecency.items_with_frecency(),
@@ -373,7 +371,8 @@ fn handle_edit(cmd: &ArgMatches) -> PaziResult {
         }
     };
 
-    let mut fclone = frecency.clone();
+    frecency.prune();
+    let fclone = frecency.clone();
     let matches = match cmd.value_of("filter") {
         Some(filter) => fclone.directory_matches_raw(filter),
         None => fclone.items_with_frecency_raw(),
@@ -427,6 +426,7 @@ fn handle_import(cmd: &ArgMatches) -> PaziResult {
         }
     };
 
+    frecency.prune();
     let stats = match cmd.value_of("autojumper") {
         Some("fasd") => match importers::Fasd::import(&mut frecency) {
             Ok(stats) => stats,
@@ -542,6 +542,7 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
             return PaziResult::Error;
         }
     };
+    frecency.prune();
     frecency.visit(dir.to_string());
 
     match frecency.save_to_disk() {
@@ -554,7 +555,7 @@ fn handle_visit(cmd: &ArgMatches) -> PaziResult {
 }
 
 fn handle_print_frecency(cmd: &ArgMatches) -> PaziResult {
-    let mut frecency = match load_frecency() {
+    let frecency = match load_frecency() {
         Ok(f) => f,
         Err(e) => {
             println!("{:?}", e);
