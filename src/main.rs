@@ -279,9 +279,11 @@ fn _main() -> PaziResult {
                     res = PaziResult::SuccessDirectory;
                 }
                 Err(interactive::FilterError::NoSelection) => {
+                    debug!("interactive2");
                     return PaziResult::ErrorNoInput;
                 }
                 Err(e) => {
+                    debug!("interactive3");
                     println!("{:?}", e);
                     return PaziResult::Error;
                 }
@@ -485,6 +487,11 @@ fn handle_jump(cmd: &ArgMatches) -> PaziResult {
         let stdout = termion::get_tty().unwrap();
         match interactive::filter(matches, std::io::stdin(), stdout) {
             Ok(el) => {
+                // Special case: if the user has interactively selected a specific directory,
+                // that's a sign we should bump its weight up in frecency. Bump!
+                // Note: 3x is a number that was picked entirely arbitrarily, making it
+                // configurable or tweaking further are both reasonable
+                frecency.visit_weight(el.clone(), 3.0);
                 print!("{}", el);
                 PaziResult::SuccessDirectory
             }

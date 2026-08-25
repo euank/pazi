@@ -11,6 +11,7 @@ pub enum Shell {
 }
 
 pub struct ShellCmd<'a> {
+    pub root: &'a Path,
     pub cmd: &'a str,
     pub env: Vec<(&'a str, String)>,
 }
@@ -100,9 +101,10 @@ set PATH (dirname {bin_path}) $PATH
             .unwrap();
     }
 
-    pub fn command(&self, root: &Path) -> ShellCmd {
+    pub fn command<'a>(&'a self, root: &'a Path) -> ShellCmd {
         let home = root.join("home/pazi").to_string_lossy().to_string();
         ShellCmd {
+            root: root,
             cmd: self.name(),
             env: vec![
                 ("HOME", home.clone()),

@@ -73,6 +73,11 @@ impl PathFrecency {
         self.dirty = true
     }
 
+    pub fn visit_weight(&mut self, dir: String, weight: f64) {
+        self.frecency.visit_weight(dir, weight);
+        self.dirty = true
+    }
+
     pub fn maybe_add_relative_to(&mut self, mut base_path: PathBuf, relative_path: &str) -> bool {
         // If the path exists, add it to the database
         base_path.push(relative_path);
